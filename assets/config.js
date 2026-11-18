@@ -4,7 +4,7 @@
    paste its ID below, and flip USE_LIVE_JOBS to true. */
 
 const CONFIG = {
-  USE_LIVE_JOBS: false,
-  SHEET_ID: "",        // e.g. "1AbC...xyz" from the sheet URL
+  USE_LIVE_JOBS: false,   // we flip this to true in the final step, once the sheet has jobs
+  SHEET_ID: "13Bh5xsKitmJw-wt8DegfSaeIuisw-_AXRU5mlZaVIC0",
   SHEET_TAB: "Jobs"
 };

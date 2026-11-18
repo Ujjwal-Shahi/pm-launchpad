@@ -3,11 +3,11 @@
  * Pulls PM/APM/AI-PM jobs every 6 hours, AI-fit-scores them with Gemini,
  * writes them to a Google Sheet, and (optionally) pings WhatsApp for strong fits.
  *
- * Zero cost: Google Custom Search (100/day free), Gemini Flash (free tier),
+ * Zero cost: Serper.dev (2500 searches/month free), Gemini Flash (free tier),
  * Apps Script triggers (free), Interakt WhatsApp (free tier).
  *
  * SETUP: see PHASE_B_SETUP.md. Fill the keys via Project Settings → Script Properties
- * (keys: GEMINI_KEY, SEARCH_KEY, SEARCH_CX, INTERAKT_KEY, WHATSAPP_TO), then run
+ * (keys: GEMINI_KEY, SEARCH_KEY, INTERAKT_KEY, WHATSAPP_TO), then run
  * setupTrigger() once from the editor.
  */
 
@@ -100,16 +100,47 @@ function pullJobs(){
   Logger.log("pullJobs done. Added " + added + " jobs, " + strong.length + " strong fits.");
 }
 
-/** Google Custom Search JSON API. */
-function searchJobs(query){
-  var key = prop("SEARCH_KEY"), cx = prop("SEARCH_CX");
-  if (!key || !cx){ Logger.log("Missing SEARCH_KEY / SEARCH_CX"); return []; }
-  var url = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx=" + cx +
-            "&num=10&q=" + encodeURIComponent(query);
+/** Run this from the editor to test keys — logs raw Serper + Gemini output. */
+function debugSearch(){
+  var results = searchJobs("product manager jobs Bangalore");
+  Logger.log("Serper returned " + results.length + " results");
+  if (results.length > 0) {
+    Logger.log("First result: " + JSON.stringify(results[0]));
+    var scored = scoreJob(results[0].title, results[0].snippet, results[0].link);
+    Logger.log("Gemini scored: " + JSON.stringify(scored));
+  } else {
+    Logger.log("Raw key check: SEARCH_KEY=" + (prop("SEARCH_KEY") ? "SET" : "MISSING") + " GEMINI_KEY=" + (prop("GEMINI_KEY") ? "SET" : "MISSING"));
+  }
+}
+
+/** Run this to test Gemini API directly. */
+function debugGemini(){
+  var key = prop("GEMINI_KEY");
+  Logger.log("GEMINI_KEY set: " + (key ? "YES (len=" + key.length + ")" : "NO"));
+  var url = "https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=" + key;
+  var payload = { contents:[{ parts:[{ text: "Reply with this exact JSON: {\"ok\":true}" }] }] };
   try {
-    var res = UrlFetchApp.fetch(url, {muteHttpExceptions:true});
+    var res = UrlFetchApp.fetch(url, { method:"post", contentType:"application/json",
+      payload: JSON.stringify(payload), muteHttpExceptions:true });
+    Logger.log("HTTP status: " + res.getResponseCode());
+    Logger.log("Response: " + res.getContentText().substring(0, 500));
+  } catch(e){ Logger.log("Error: " + e); }
+}
+
+/** Serper.dev Google Search API (2500 free/month, no billing required). */
+function searchJobs(query){
+  var key = prop("SEARCH_KEY");
+  if (!key){ Logger.log("Missing SEARCH_KEY"); return []; }
+  try {
+    var res = UrlFetchApp.fetch("https://google.serper.dev/search", {
+      method: "post",
+      contentType: "application/json",
+      headers: { "X-API-KEY": key },
+      payload: JSON.stringify({ q: query, num: 10, gl: "in", hl: "en" }),
+      muteHttpExceptions: true
+    });
     var data = JSON.parse(res.getContentText());
-    return (data.items || []).map(function(it){
+    return (data.organic || []).map(function(it){
       return { title: it.title, link: it.link, snippet: it.snippet || "" };
     });
   } catch(e){ Logger.log("search error: " + e); return []; }
@@ -127,11 +158,11 @@ function scoreJob(title, snippet, link){
     "fit (integer 0-100 for THIS candidate), why (one sentence why it fits or not, mention his AI/tools background), " +
     "questions (array of exactly 8 likely interview questions tailored to this role and his background), " +
     "brief (2 sentences about the company). If this is not a real PM/APM/Product job posting, set fit to 0.";
-  var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + key;
+  var url = "https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=" + key;
   var payload = { contents:[{ parts:[{ text: prompt }] }], generationConfig:{ temperature:0.2, responseMimeType:"application/json" } };
   try {
     var res = UrlFetchApp.fetch(url, { method:"post", contentType:"application/json",
-      payload: JSON.stringify(payload), muteHttpExceptions:true });
+      payload: JSON.stringify(payload), muteHttpExceptions:true, deadline:30 });
     var data = JSON.parse(res.getContentText());
     var text = data.candidates && data.candidates[0].content.parts[0].text;
     if (!text) return null;
