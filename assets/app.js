@@ -277,8 +277,46 @@ function toggleTheme(){const cur=document.documentElement.getAttribute('data-the
 
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('mover'))e.target.hidden=true;});
 
+/* PHASE B — live jobs from the published Google Sheet (falls back to sample data) */
+function parseCsv(text){
+  const rows=[]; let row=[], cell='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else { if(c==='"')q=true; else if(c===','){row.push(cell);cell='';} else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';} else if(c!=='\r')cell+=c; }
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+function defaultCv(){return "• Owned 0→1 AI Call Quality Analyzer — defined the problem, led research, shipped to 47 RMs; audit coverage 5% → 100%\n• Built Property Carnival CRM — 200+ concurrent buyers, atomic queue, WhatsApp automation, 0 double-assigns\n• Designed multi-agent Gemini pipeline with an 8-metric evaluation rubric\n• 4 years NoBroker field→BA; built 5 production internal tools solo";}
+function defaultMsg(role,co){return `Hi [Name], I'm Ujjwal — BA at NoBroker who built an AI call auditor (47 RMs) and a real-time event CRM (200 buyers). I'm exploring ${role} roles and ${co}'s work caught my eye. Would you be open to a quick chat?`;}
+function loadLiveJobs(){
+  if(typeof CONFIG==='undefined'||!CONFIG.USE_LIVE_JOBS||!CONFIG.SHEET_ID)return;
+  const url=`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CONFIG.SHEET_TAB||'Jobs')}`;
+  fetch(url).then(r=>r.ok?r.text():Promise.reject()).then(txt=>{
+    const rows=parseCsv(txt); if(rows.length<2)return;
+    const head=rows[0].map(h=>h.trim().toLowerCase());
+    const idx=n=>head.indexOf(n);
+    const live=rows.slice(1).filter(r=>r.length>1&&r[idx('url')]).map(r=>{
+      const get=n=>{const i=idx(n);return i>=0?(r[i]||'').trim():'';};
+      const fit=parseInt(get('fit'))||0;
+      const sal=get('salary'); const loc=get('location');
+      const tags=[loc,sal,get('isNew').toLowerCase()==='true'?'New':''].filter(Boolean);
+      const role=get('role')||'Product role';
+      const co=get('company')||'Company';
+      return {id:get('id')||'live'+Math.random().toString(36).slice(2,7),co:co,role:role,logo:"🦉",logobg:"#e3ece4",
+        fit:fit,tags:tags,applyUrl:get('url'),why:get('why')||'Pulled by the owl and fit-scored for you.',
+        isNew:get('isNew').toLowerCase()==='true',isStrong:fit>=80,isInternal:false,
+        questions:(get('questions')||'').split(' || ').filter(Boolean),
+        cv:defaultCv(),msg:defaultMsg(role,co),brief:get('brief')||''};
+    }).filter(j=>j.fit>0).sort((a,b)=>b.fit-a.fit);
+    if(live.length){ JOBS.length=0; live.forEach(j=>JOBS.push(j)); renderJobs(curFilter); renderHall(); }
+  }).catch(()=>{ /* keep sample data */ });
+}
+
 loadState();
 renderHall();
 renderJobs('all');
 renderKanban();
 renderCoach();
+loadLiveJobs();
