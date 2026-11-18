@@ -17,17 +17,17 @@
   <div class="sb-crest">
     <div class="sb-motto">Aut Inveniam Viam Aut Faciam</div>
     <div class="sb-title">PM <em>Launchpad</em></div>
-    <div class="sb-house">Slytherin · Ujjwal's Academy</div>
+    <div class="sb-house">Gryffindor · Ujjwal's Academy</div>
   </div>
-  <div class="sn on" data-t="hall" onclick="sw('hall')"><span class="ic">🏛</span> Great Hall</div>
-  <div class="sn" data-t="curriculum" onclick="sw('curriculum')"><span class="ic">📜</span> Curriculum <span class="nb" id="sb-wk">W1</span></div>
-  <div class="sn" data-t="pensieve" onclick="sw('pensieve')"><span class="ic">🔮</span> The Pensieve</div>
-  <div class="sn" data-t="library" onclick="sw('library')"><span class="ic">📚</span> The Library</div>
-  <div class="sn" data-t="owl" onclick="sw('owl')"><span class="ic">🦉</span> Owl Post <span class="nb" id="sb-jcnt">5</span></div>
-  <div class="sn" data-t="goblet" onclick="sw('goblet')"><span class="ic">🔥</span> Goblet of Fire</div>
-  <div class="sn" data-t="duel" onclick="sw('duel')"><span class="ic">⚔</span> Duelling Club</div>
-  <div class="sn" data-t="hogsmeade" onclick="sw('hogsmeade')"><span class="ic">🏘</span> Hogsmeade</div>
-  <div class="sn" data-t="prd" onclick="sw('prd')"><span class="ic">📋</span> The Decree</div>
+  <div class="sn on" data-t="hall" onclick="sw('hall',event)"><span class="ic">🏛</span> Great Hall</div>
+  <div class="sn" data-t="curriculum" onclick="sw('curriculum',event)"><span class="ic">📜</span> Curriculum <span class="nb" id="sb-wk">W1</span></div>
+  <div class="sn" data-t="pensieve" onclick="sw('pensieve',event)"><span class="ic">🔮</span> The Pensieve</div>
+  <div class="sn" data-t="library" onclick="sw('library',event)"><span class="ic">📚</span> The Library</div>
+  <div class="sn" data-t="owl" onclick="sw('owl',event)"><span class="ic">🦉</span> Owl Post <span class="nb" id="sb-jcnt">5</span></div>
+  <div class="sn" data-t="goblet" onclick="sw('goblet',event)"><span class="ic">🔥</span> Goblet of Fire</div>
+  <div class="sn" data-t="duel" onclick="sw('duel',event)"><span class="ic">⚔</span> Duelling Club</div>
+  <div class="sn" data-t="hogsmeade" onclick="sw('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade</div>
+  <div class="sn" data-t="prd" onclick="sw('prd',event)"><span class="ic">📋</span> The Decree</div>
   <div class="sb-pts">
     <div class="sb-ptn" id="sb-ptn">0</div>
     <div><div class="sb-ptl">house points</div><div class="sb-ptl" id="sb-streak" style="color:var(--ink3)">0-day streak</div></div>
@@ -210,10 +210,10 @@
 </div>
 
 <nav id="bnav">
-  <div class="bni on" data-t="hall" onclick="sw('hall')"><span class="bni-ic">🏛</span>Hall</div>
-  <div class="bni" data-t="curriculum" onclick="sw('curriculum')"><span class="bni-ic">📜</span>Learn</div>
-  <div class="bni" data-t="pensieve" onclick="sw('pensieve')"><span class="bni-ic">🔮</span>Watch</div>
-  <div class="bni" data-t="owl" onclick="sw('owl')"><span class="bni-ic">🦉</span>Owls</div>
+  <div class="bni on" data-t="hall" onclick="sw('hall',event)"><span class="bni-ic">🏛</span>Hall</div>
+  <div class="bni" data-t="curriculum" onclick="sw('curriculum',event)"><span class="bni-ic">📜</span>Learn</div>
+  <div class="bni" data-t="pensieve" onclick="sw('pensieve',event)"><span class="bni-ic">🔮</span>Watch</div>
+  <div class="bni" data-t="owl" onclick="sw('owl',event)"><span class="bni-ic">🦉</span>Owls</div>
   <div class="bni" onclick="openSheet()"><span class="bni-ic">☰</span>More</div>
 </nav>
 </div>
@@ -223,11 +223,11 @@
     <div class="mttl">More chambers</div>
     <div class="msub">The rest of the castle</div>
     <div class="sheet-list">
-      <div class="sheet-item" onclick="sheetGo('library')"><span class="ic">📚</span> The Library</div>
-      <div class="sheet-item" onclick="sheetGo('goblet')"><span class="ic">🔥</span> Goblet of Fire · Applications</div>
-      <div class="sheet-item" onclick="sheetGo('duel')"><span class="ic">⚔</span> Duelling Club · Interview prep</div>
-      <div class="sheet-item" onclick="sheetGo('hogsmeade')"><span class="ic">🏘</span> Hogsmeade · Fun</div>
-      <div class="sheet-item" onclick="sheetGo('prd')"><span class="ic">📋</span> The Decree · PRD</div>
+      <div class="sheet-item" onclick="sheetGo('library',event)"><span class="ic">📚</span> The Library</div>
+      <div class="sheet-item" onclick="sheetGo('goblet',event)"><span class="ic">🔥</span> Goblet of Fire · Applications</div>
+      <div class="sheet-item" onclick="sheetGo('duel',event)"><span class="ic">⚔</span> Duelling Club · Interview prep</div>
+      <div class="sheet-item" onclick="sheetGo('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade · Fun</div>
+      <div class="sheet-item" onclick="sheetGo('prd',event)"><span class="ic">📋</span> The Decree · PRD</div>
     </div>
     <div class="macts"><button class="btn g mclose" onclick="closeSheet()">Close</button></div>
   </div>

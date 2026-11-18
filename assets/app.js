@@ -27,8 +27,24 @@ function markStudied(){const s=streakObj();const today=new Date().toDateString()
 
 function loadState(){curWk=LS.get('wk',1);curPhase=Math.ceil(curWk/4);const th=LS.get('theme','');if(th)document.documentElement.setAttribute('data-theme',th);}
 
-function sw(t){
-  curTab=t; closeSheet();
+function flyOwl(evt){
+  if(!evt||window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const src=evt.target.closest('[data-t]')||evt.target;
+  const r=src.getBoundingClientRect();
+  const sx=r.left+r.width/2, sy=r.top+r.height/2;
+  const dx=window.innerWidth/2-sx, dy=window.innerHeight*0.3-sy;
+  const owl=document.createElement('div');
+  owl.className='owl-fly';
+  owl.textContent='\u{1F989}';
+  owl.style.left=sx+'px'; owl.style.top=sy+'px';
+  owl.style.setProperty('--dx',dx+'px'); owl.style.setProperty('--dy',dy+'px');
+  owl.style.setProperty('--ox1',(dx*0.3)+'px'); owl.style.setProperty('--oy1',(dy*0.3-40)+'px');
+  owl.style.setProperty('--ox2',(dx*0.7)+'px'); owl.style.setProperty('--oy2',(dy*0.7+20)+'px');
+  document.body.appendChild(owl);
+  owl.addEventListener('animationend',()=>owl.remove());
+}
+function sw(t,evt){
+  curTab=t; closeSheet(); flyOwl(evt);
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.id==='tab-'+t));
   document.querySelectorAll('[data-t]').forEach(el=>el.classList.toggle('on',el.dataset.t===t));
   window.scrollTo(0,0);
@@ -42,7 +58,7 @@ function sw(t){
 }
 function openSheet(){$('more-sheet').hidden=false;}
 function closeSheet(){const s=$('more-sheet');if(s)s.hidden=true;}
-function sheetGo(t){closeSheet();sw(t);}
+function sheetGo(t,evt){closeSheet();sw(t,evt);}
 
 /* GREAT HALL */
 function renderHall(){
