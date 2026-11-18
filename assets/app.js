@@ -242,10 +242,10 @@ function renderPdfPage(){
         wrap.innerHTML=`<div class="tt-page-num">— Page ${pdfPage} —</div>${html}`;
       }else{
         const canvas=$('pdf-canvas');
-        const scale=1.5;
+        const scale=2;
         const vp=page.getViewport({scale});
         canvas.width=vp.width; canvas.height=vp.height;
-        canvas.style.cssText='display:block;width:100%;height:auto;border-radius:6px;';
+        canvas.style.cssText='display:block;max-width:680px;width:100%;height:auto;margin:0 auto;';
         page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise.then(()=>{
           wrap.innerHTML='';
           wrap.appendChild(document.createElement('div')).className='tt-page-num';
