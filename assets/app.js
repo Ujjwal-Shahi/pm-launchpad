@@ -10,7 +10,7 @@ const $=id=>document.getElementById(id);
 
 /* points + streak */
 function points(){return LS.get('points',0);}
-function addPoints(n){LS.set('points',points()+n);animateCount();}
+function addPoints(n){LS.set('points',points()+n);animateCount();spawnSparkles();}
 function animateCount(){
   const target=points();
   ['sb-ptn','pc-pts','tb-pts'].forEach(id=>{
@@ -168,7 +168,7 @@ function openBook(encTitle){
   $('bk-sub').textContent=b.author+' · '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Loading…</span><button class="btn g" onclick="pdfNext()">Next ›</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">Save progress here</button></div><div id="pdf-text-wrap" class="themed-text"><canvas id="pdf-canvas" style="display:none"></canvas></div>`;
+    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()">Next ›</button><span style="flex:1"></span><button class="btn g" id="bk-save" onclick="saveBookProgress()">💾 Save progress</button></div><div id="pdf-text-wrap" class="themed-text"><canvas id="pdf-canvas" style="display:none"></canvas></div>`;
     $('book-modal').hidden=false;
     loadPdf(b.pdf);
   }else{
@@ -371,9 +371,49 @@ function loadLiveJobs(){
   }).catch(()=>{ /* keep sample data */ });
 }
 
+/* Floating candles — Great Hall ambiance */
+function spawnCandles(){
+  const layer=$('candle-layer'); if(!layer)return;
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const count=window.innerWidth<600?5:9;
+  let html='';
+  for(let i=0;i<count;i++){
+    const left=8+Math.random()*84;
+    const top=5+Math.random()*60;
+    const delay=Math.random()*5;
+    const size=14+Math.random()*6;
+    html+=`<div class="candle" style="left:${left}%;top:${top}%;animation-delay:${delay}s;font-size:${size}px">🕯️</div>`;
+  }
+  layer.innerHTML=html;
+}
+
+/* Golden sparkle burst on points earned */
+function spawnSparkles(){
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const el=$('pc-pts')||$('sb-ptn'); if(!el)return;
+  const r=el.getBoundingClientRect();
+  const burst=document.createElement('div');
+  burst.className='sparkle-burst';
+  burst.style.left=(r.left+r.width/2)+'px';
+  burst.style.top=(r.top+r.height/2)+'px';
+  for(let i=0;i<12;i++){
+    const s=document.createElement('div');
+    s.className='sparkle';
+    const angle=Math.random()*Math.PI*2;
+    const dist=20+Math.random()*40;
+    s.style.setProperty('--sx',Math.cos(angle)*dist+'px');
+    s.style.setProperty('--sy',Math.sin(angle)*dist+'px');
+    s.style.animationDelay=(Math.random()*0.15)+'s';
+    burst.appendChild(s);
+  }
+  document.body.appendChild(burst);
+  setTimeout(()=>burst.remove(),900);
+}
+
 loadState();
 renderHall();
 renderJobs('all');
 renderKanban();
 renderCoach();
 loadLiveJobs();
+spawnCandles();

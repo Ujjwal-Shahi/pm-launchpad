@@ -45,6 +45,7 @@
 </header>
 
 <section id="tab-hall" class="tab on">
+  <div class="candle-layer" id="candle-layer"></div>
   <div class="hall-head">
     <div class="hh-greet" id="greet">Welcome back, Ujjwal</div>
     <div class="hh-date" id="greet-date">Today</div>
@@ -88,7 +89,7 @@
 </section>
 
 <section id="tab-curriculum" class="tab">
-  <div class="pad"><div class="seclbl">The Curriculum</div><div class="secname">Four years, sixteen weeks</div></div>
+  <div class="pad"><div class="seclbl">The Curriculum</div><div class="secname">Your O.W.L. preparation</div><div class="sec-story">Master each year's spells before advancing. Complete every task to earn house points and unlock the next year's coursework.</div></div>
   <div class="ptabs">
     <div class="pt on" data-p="1" onclick="switchPhase(1)">Year 1 · Fundamentals</div>
     <div class="pt" data-p="2" onclick="switchPhase(2)">Year 2 · Product Sense</div>
@@ -106,7 +107,7 @@
 </section>
 
 <section id="tab-pensieve" class="tab">
-  <div class="pad"><div class="seclbl">The Pensieve</div><div class="secname">Memories to watch, in order</div></div>
+  <div class="pad"><div class="seclbl">The Pensieve</div><div class="secname">Extract the memories</div><div class="sec-story">Swirl the silvery threads and step into each memory. Watch, then cast the spell to prove you absorbed the concept.</div></div>
   <div class="pintro">Watch each memory in sequence — videos play right here, no leaving the app. Cast the spell (quiz) to lock in the concept and earn house points. Ad-free sources are flagged in green. (YouTube videos may still show YouTube's own ads unless you have Premium.)</div>
   <div class="ptabs">
     <div class="pt on" data-vp="1" onclick="switchVideoYear(1)">Year 1</div>
@@ -119,7 +120,7 @@
 </section>
 
 <section id="tab-library" class="tab">
-  <div class="pad"><div class="seclbl">The Library</div><div class="secname">Every volume, one shelf</div></div>
+  <div class="pad"><div class="seclbl">The Library</div><div class="secname">The Restricted Section</div><div class="sec-story">Madam Pince guards these shelves fiercely. Each tome holds the knowledge of a PM grandmaster — read them cover to cover and earn your O.W.L.s.</div></div>
   <div class="shelf"><div class="spines" id="shelf-spines"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
       <span style="font-size:13px;color:var(--ink2);font-style:italic">11 volumes · tap a spine to read</span>
@@ -132,7 +133,7 @@
 </section>
 
 <section id="tab-owl" class="tab">
-  <div class="pad"><div class="seclbl">Owl Post</div><div class="secname">Openings, fit-scored for you</div></div>
+  <div class="pad"><div class="seclbl">Owl Post</div><div class="secname">Owls bearing opportunities</div><div class="sec-story">Each owl carries a scroll — a PM opening, fit-scored against your profile. Enter the Locker Room to prepare: 10 interview questions, a tailored CV, a cold message, and a company brief. Never apply without preparation.</div></div>
   <div class="filters">
     <div class="fb on" data-f="all" onclick="filterJobs('all')">All</div>
     <div class="fb" data-f="strong" onclick="filterJobs('strong')">Strong fit 80%+</div>
@@ -144,14 +145,14 @@
 </section>
 
 <section id="tab-goblet" class="tab">
-  <div class="pad"><div class="seclbl">The Goblet of Fire</div><div class="secname">Your application pipeline</div></div>
+  <div class="pad"><div class="seclbl">The Goblet of Fire</div><div class="secname">Names from the flame</div><div class="sec-story">Drop your name into the Goblet and track where each application goes. The fire judges only the worthy — move cards through the pipeline as you advance.</div></div>
   <div class="kbscroll" id="kanban"></div>
   <div style="padding:14px 18px 0"><div class="card" style="font-size:14px;color:var(--ink2)"><strong style="font-family:var(--disp);color:var(--ink)">How it works:</strong> each locker room from Owl Post drops a card into Saved. Move it along as you apply, interview and hear back.</div></div>
   <div class="bpad"></div>
 </section>
 
 <section id="tab-duel" class="tab">
-  <div class="pad"><div class="seclbl">The Duelling Club</div><div class="secname">Spells (the question bank)</div></div>
+  <div class="pad"><div class="seclbl">The Duelling Club</div><div class="secname">Wands at the ready</div><div class="sec-story">Professor Snape says: "Defence Against the Dark Arts of interviewing." Practise every spell until you can cast it under pressure. Enter a duel to simulate the real thing.</div></div>
   <div class="qcats" id="qcat-list"></div>
   <div class="gap"><div class="pad"><div class="seclbl">Your frameworks</div><div class="secname">Quick-reference incantations</div></div></div>
   <div class="fwgrid">
@@ -167,7 +168,7 @@
 </section>
 
 <section id="tab-hogsmeade" class="tab">
-  <div class="pad"><div class="seclbl">Hogsmeade</div><div class="secname">Fun, pointed at the goal</div></div>
+  <div class="pad"><div class="seclbl">Hogsmeade</div><div class="secname">A Butterbeer break</div><div class="sec-story">Every wizard needs a break from studying. These are the Three Broomsticks of your PM journey — fun, but everything here still sharpens your blade.</div></div>
   <div class="fungrid" id="fun-list"></div>
   <div class="bpad"></div>
 </section>
@@ -236,8 +237,8 @@
 <div id="book-modal" class="mover" hidden>
   <div class="mbox">
     <div class="bk-header">
-      <div class="mttl" id="bk-title">Book</div>
-      <div class="msub" id="bk-sub"></div>
+      <div style="flex:1;min-width:0"><div class="mttl" id="bk-title">Book</div><div class="msub" id="bk-sub"></div></div>
+      <button class="bk-close-x" onclick="closeBook()" title="Close">✕</button>
     </div>
     <div class="bk-content" id="bk-body"></div>
     <div class="macts"><button class="btn g mclose" onclick="closeBook()">📚 Close</button></div>
