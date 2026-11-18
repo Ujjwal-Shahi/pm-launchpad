@@ -170,7 +170,7 @@ function openBook(encTitle){
   if(b.pdf){
     body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Loading…</span><button class="btn g" onclick="pdfNext()">Next ›</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">Save progress here</button></div><div id="pdf-canvas-wrap"><canvas id="pdf-canvas"></canvas></div>`;
     $('book-modal').hidden=false;
-    loadPdf('books/'+b.pdf);
+    loadPdf(b.pdf);
   }else{
     const notesHtml=b.notes?`<div class="booknotes">${formatNotes(b.notes)}</div>`:'';
     body.innerHTML=`${notesHtml}
