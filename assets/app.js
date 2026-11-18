@@ -156,11 +156,25 @@ function openBook(encTitle){
     $('book-modal').hidden=false;
     loadPdf('books/'+b.pdf);
   }else{
-    body.innerHTML=`<div class="pdf-note"><b>No PDF loaded yet.</b><br><br>To read this inside the app, drop your own legally-owned copy as a PDF into the <b>/books</b> folder, then set its filename in <b>assets/data.js</b> (the <code>pdf</code> field for this book). It'll open right here in the Slytherin reader.<br><br>Until then, use <b>Buy / borrow</b> to get it, or track your reading progress with the slider below.<br><br><label style="font-size:13px;">Progress: <span id="man-pct">0</span>%</label><br><input type="range" min="0" max="100" value="0" id="man-range" style="width:100%;margin-top:8px;" oninput="document.getElementById('man-pct').textContent=this.value"><div style="margin-top:10px;"><button class="btn p" onclick="saveManual()">Save progress</button> <a class="btn g" href="${b.buy}" target="_blank" rel="noopener">Buy / borrow</a></div></div>`;
+    const notesHtml=b.notes?`<div class="booknotes">${formatNotes(b.notes)}</div>`:'';
+    body.innerHTML=`${notesHtml}
+      <div class="readrow"><label style="font-size:13px;color:var(--ink2);">Reading progress: <b id="man-pct">0</b>%</label>
+      <input type="range" min="0" max="100" value="0" id="man-range" style="width:100%;margin-top:8px;" oninput="document.getElementById('man-pct').textContent=this.value">
+      <div style="margin-top:10px;"><button class="btn p" onclick="saveManual()">Save progress</button> <a class="btn g" href="${b.buy}" target="_blank" rel="noopener">Buy / borrow</a></div></div>
+      <div class="pdf-tip">Own this book as a PDF? Drop it in <b>/books</b> and set its <code>pdf</code> field in <b>assets/data.js</b> to read it here in the reader.</div>`;
     const prog=LS.get('bookprog',{}); const cur=prog[title]!==undefined?prog[title]:b.pct;
     $('book-modal').hidden=false;
     const r=$('man-range'); if(r){r.value=cur;$('man-pct').textContent=cur;}
   }
+}
+function formatNotes(txt){
+  return txt.split('\n').map(line=>{
+    const t=line.trim();
+    if(t==='')return '<div style="height:7px"></div>';
+    if(/^[A-Z0-9][A-Z0-9 ()—\-]+$/.test(t))return `<div class="nhead">${t}</div>`;
+    if(t.startsWith('•'))return `<div class="nbul">${t}</div>`;
+    return `<div class="npar">${t}</div>`;
+  }).join('');
 }
 function saveManual(){const v=parseInt($('man-range').value)||0;const prog=LS.get('bookprog',{});prog[pdfTitle]=v;LS.set('bookprog',prog);markStudied();closeBook();renderLibrary();}
 function loadPdf(url){
