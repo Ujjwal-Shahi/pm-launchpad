@@ -80,6 +80,10 @@ function renderHall(){
   document.querySelectorAll('#tab-hall .yr').forEach((p,i)=>{p.classList.remove('done','cur');if(i+1<curPhase)p.classList.add('done');else if(i+1===curPhase)p.classList.add('cur');});
   $('sb-wk').textContent='W'+curWk;
   renderStreak(); animateCount();
+  if(!document.querySelector('.hall-ornament-tl')){
+    var hall=$('tab-hall');
+    if(hall){hall.insertAdjacentHTML('afterbegin','<div class="hall-ornament hall-ornament-tl">✦</div><div class="hall-ornament hall-ornament-tr">✦</div>');}
+  }
   $('jprev').innerHTML=JOBS.slice(0,3).map(j=>{
     const fc=j.fit>=80?'c-ok':j.fit>=65?'c-wa':'c-mu';
     return `<div class="jp" onclick="sw('owl')"><div class="jp-logo" style="background:${j.logobg}">${j.logo}</div><div style="flex:1;min-width:0;"><div class="jp-role">${j.role}</div><div class="jp-co">${j.co}</div></div><div class="jp-fit ${fc}">${j.fit}%</div></div>`;
@@ -168,13 +172,14 @@ function openBook(encTitle){
   $('bk-sub').textContent=b.author+' · '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()">Next ›</button><span style="flex:1"></span><button class="btn g" id="bk-save" onclick="saveBookProgress()">💾 Save progress</button></div>
+    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()">Next ›</button><span style="flex:1"></span><button class="sticky-note-btn" id="sticky-btn" onclick="toggleStickyNote()">\u{1F4DD} Add note</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">💾 Save progress</button></div>
     <div class="page-container">
       <div class="page-zone page-zone-left" onclick="pdfPrev()"><span class="page-zone-hint">‹</span></div>
       <div class="page-zone page-zone-right" onclick="pdfNext()"><span class="page-zone-hint">›</span></div>
       <div class="page-scroll" id="pdf-text-wrap"><canvas id="pdf-canvas" style="display:none"></canvas></div>
     </div>`;
     $('book-modal').hidden=false;
+    document.body.classList.add('book-open');
     loadPdf(b.pdf);
   }else{
     const notesHtml=b.notes?`<div class="booknotes">${formatNotes(b.notes)}</div>`:'';
@@ -185,6 +190,7 @@ function openBook(encTitle){
       <div class="pdf-tip">Own this book as a PDF? Drop it in <b>/books</b> and set its <code>pdf</code> field in <b>assets/data.js</b> to read it here in the reader.</div>`;
     const prog=LS.get('bookprog',{}); const cur=prog[title]!==undefined?prog[title]:b.pct;
     $('book-modal').hidden=false;
+    document.body.classList.add('book-open');
     const r=$('man-range'); if(r){r.value=cur;$('man-pct').textContent=cur;}
   }
 }
@@ -280,6 +286,7 @@ function _finishPage(wrap,html,canvas){
   wrap.innerHTML='';
   wrap.appendChild(inner);
   wrap.scrollTop=0;
+  updateStickyBtn();
 }
 function pdfPrev(){if(pdfDoc&&pdfPage>1){_turnDir='left';pdfPage--;renderPdfPage();}}
 function pdfNext(){if(pdfDoc&&pdfPage<pdfDoc.numPages){_turnDir='right';pdfPage++;renderPdfPage();}}
@@ -291,13 +298,53 @@ function saveBookProgress(){
   $('bk-save').textContent='Saved ✓';
   setTimeout(()=>{closeBook();renderLibrary();},600);
 }
-function closeBook(){$('book-modal').hidden=true;pdfDoc=null;}
+function closeBook(){$('book-modal').hidden=true;pdfDoc=null;document.body.classList.remove('book-open');}
 document.addEventListener('keydown',function(e){
   if($('book-modal').hidden||!pdfDoc)return;
   if(e.key==='ArrowLeft'){e.preventDefault();pdfPrev();}
   else if(e.key==='ArrowRight'){e.preventDefault();pdfNext();}
   else if(e.key==='Escape'){e.preventDefault();closeBook();}
 });
+(function(){var sx,sy;document.addEventListener('touchstart',function(e){if($('book-modal').hidden||!pdfDoc)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});document.addEventListener('touchend',function(e){if($('book-modal').hidden||!pdfDoc||sx===undefined)return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=undefined;if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx))return;if(dx<0)pdfNext();else pdfPrev();});})();
+
+/* STICKY NOTES on book pages */
+function getStickyKey(){return 'note_'+encodeURIComponent(pdfTitle)+'_p'+pdfPage;}
+function getNote(){return LS.get(getStickyKey(),'');}
+function toggleStickyNote(){
+  var existing=document.getElementById('sticky-wrap');
+  if(existing){existing.remove();return;}
+  var frame=document.querySelector('.page-frame');
+  if(!frame)return;
+  var wrap=document.createElement('div');
+  wrap.className='sticky-wrap';
+  wrap.id='sticky-wrap';
+  var saved=getNote();
+  wrap.innerHTML='<textarea class="sticky-note-ta" id="sticky-ta" placeholder="Write your note for this page…">'+saved.replace(/</g,'&lt;')+'</textarea><div class="sticky-actions"><button class="sticky-del" onclick="delStickyNote()">Delete</button><button class="sticky-save" onclick="saveStickyNote()">Save note</button></div>';
+  frame.appendChild(wrap);
+  document.getElementById('sticky-ta').focus();
+}
+function saveStickyNote(){
+  var ta=document.getElementById('sticky-ta');
+  if(!ta)return;
+  var txt=ta.value.trim();
+  if(txt)LS.set(getStickyKey(),txt); else LS.set(getStickyKey(),undefined);
+  var wrap=document.getElementById('sticky-wrap');
+  if(wrap)wrap.remove();
+  updateStickyBtn();
+}
+function delStickyNote(){
+  try{localStorage.removeItem('pml_'+getStickyKey());}catch(e){}
+  var wrap=document.getElementById('sticky-wrap');
+  if(wrap)wrap.remove();
+  updateStickyBtn();
+}
+function updateStickyBtn(){
+  var btn=document.getElementById('sticky-btn');
+  if(!btn)return;
+  var has=getNote();
+  btn.className='sticky-note-btn'+(has?' has-note':'');
+  btn.textContent=has?'\u{1F4DD} View note':'\u{1F4DD} Add note';
+}
 
 /* OWL POST */
 function filterJobs(f){curFilter=f;document.querySelectorAll('[data-f]').forEach(el=>el.classList.toggle('on',el.dataset.f===f));renderJobs(f);}
@@ -400,18 +447,22 @@ function loadLiveJobs(){
   }).catch(()=>{ /* keep sample data */ });
 }
 
-/* Floating candles — Great Hall ambiance */
+/* Floating candles — Great Hall ceiling grid */
 function spawnCandles(){
   const layer=$('candle-layer'); if(!layer)return;
   if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
-  const count=window.innerWidth<600?5:9;
-  let html='';
-  for(let i=0;i<count;i++){
-    const left=8+Math.random()*84;
-    const top=5+Math.random()*60;
-    const delay=Math.random()*5;
-    const size=14+Math.random()*6;
-    html+=`<div class="candle" style="left:${left}%;top:${top}%;animation-delay:${delay}s;font-size:${size}px">🕯️</div>`;
+  var isMobile=window.innerWidth<600;
+  var cols=isMobile?4:7;
+  var rows=2;
+  var html='';
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      var left=8+(c*(84/(cols-1)))+(r%2?4:-4)+Math.random()*3;
+      var top=12+r*32+Math.random()*8;
+      var delay=(c*0.6+r*1.2+Math.random()*1.5).toFixed(1);
+      var size=isMobile?16:18+Math.random()*4;
+      html+='<div class="candle" style="left:'+left+'%;top:'+top+'px;animation-delay:'+delay+'s;font-size:'+size+'px">\u{1F56F}️</div>';
+    }
   }
   layer.innerHTML=html;
 }
