@@ -172,7 +172,7 @@ function openBook(encTitle){
   $('bk-sub').textContent=b.author+' · '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()" title="Previous page (← key)">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()" title="Next page (→ key)">Next ›</button><span style="flex:1"></span><button class="sticky-note-btn" id="sticky-btn" onclick="toggleStickyNote()">\u{1F4DD} Add note</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">\u{1F4BE} Save progress</button></div>
+    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()" title="Previous page (← key)">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()" title="Next page (→ key)">Next ›</button><button class="sticky-note-btn" id="sticky-btn" onclick="toggleStickyNote()" style="margin-left:auto">\u{1F4DD} Add note</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">\u{1F4BE} Save progress</button></div>
     <div class="pdf-progress"><div class="pdf-progress-fill" id="pdf-prog-fill"></div></div>
     <div class="page-container">
       <div class="page-zone page-zone-left" onclick="pdfPrev()"><span class="page-zone-hint">‹</span></div>
