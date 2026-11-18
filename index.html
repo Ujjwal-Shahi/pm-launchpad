@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PM Launchpad</title>
+<meta name="description" content="Ujjwal's PM career command center — Hogwarts edition.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+<div id="app">
+<nav id="sb">
+  <div class="sb-crest">
+    <div class="sb-motto">Aut Inveniam Viam Aut Faciam</div>
+    <div class="sb-title">PM <em>Launchpad</em></div>
+    <div class="sb-house">Slytherin · Ujjwal's Academy</div>
+  </div>
+  <div class="sn on" data-t="hall" onclick="sw('hall')"><span class="ic">🏛</span> Great Hall</div>
+  <div class="sn" data-t="curriculum" onclick="sw('curriculum')"><span class="ic">📜</span> Curriculum <span class="nb" id="sb-wk">W1</span></div>
+  <div class="sn" data-t="pensieve" onclick="sw('pensieve')"><span class="ic">🔮</span> The Pensieve</div>
+  <div class="sn" data-t="library" onclick="sw('library')"><span class="ic">📚</span> The Library</div>
+  <div class="sn" data-t="owl" onclick="sw('owl')"><span class="ic">🦉</span> Owl Post <span class="nb" id="sb-jcnt">5</span></div>
+  <div class="sn" data-t="goblet" onclick="sw('goblet')"><span class="ic">🔥</span> Goblet of Fire</div>
+  <div class="sn" data-t="duel" onclick="sw('duel')"><span class="ic">⚔</span> Duelling Club</div>
+  <div class="sn" data-t="hogsmeade" onclick="sw('hogsmeade')"><span class="ic">🏘</span> Hogsmeade</div>
+  <div class="sn" data-t="prd" onclick="sw('prd')"><span class="ic">📋</span> The Decree</div>
+  <div class="sb-pts">
+    <div class="sb-ptn" id="sb-ptn">0</div>
+    <div><div class="sb-ptl">house points</div><div class="sb-ptl" id="sb-streak" style="color:var(--ink3)">0-day streak</div></div>
+  </div>
+  <div class="sb-foot"><button class="sb-theme" onclick="toggleTheme()">☾ Toggle candlelight</button></div>
+</nav>
+
+<div id="mw">
+<header id="topbar">
+  <div class="tb-title">PM <em>Launchpad</em></div>
+  <div class="tbr">
+    <div class="pts-pill">⏳ <span id="tb-pts">0</span></div>
+    <button class="ibtn" onclick="toggleTheme()" aria-label="Toggle theme">☾</button>
+  </div>
+</header>
+
+<section id="tab-hall" class="tab on">
+  <div class="hall-head">
+    <div class="hh-greet" id="greet">Welcome back, Ujjwal</div>
+    <div class="hh-date" id="greet-date">Today</div>
+  </div>
+  <div class="points-card">
+    <div class="pc-row">
+      <div class="pc-glass">⏳</div>
+      <div style="flex:1">
+        <div class="pc-num"><span id="pc-pts">0</span> house points</div>
+        <div class="pc-lbl"><span id="pc-streak">0</span>-day study streak · keep the hourglass filling</div>
+      </div>
+    </div>
+  </div>
+  <div class="today">
+    <div class="t-ey">Today's Lesson · Year <span id="today-year">1</span></div>
+    <div class="t-task" id="today-task">Read Inspired by Marty Cagan, Ch 1–10</div>
+    <div class="t-pills"><span class="pill" id="today-time">45 min</span><span class="pill" id="today-phase">Year 1 · Fundamentals</span></div>
+  </div>
+  <div class="stats">
+    <div class="sc"><div class="snum c-ok" id="stat-jobs">5</div><div class="slbl">owls waiting</div></div>
+    <div class="sc"><div class="snum" id="stat-apps">3</div><div class="slbl">in the goblet</div></div>
+    <div class="sc"><div class="snum c-wa" id="stat-days">112</div><div class="slbl">days to target</div></div>
+  </div>
+  <div class="prog-card card gap">
+    <div class="prog-top">
+      <div><div class="prog-ttl">Your 4 Years at the Academy</div><div class="prog-sub" id="prog-label">Year 1 · Week 1 of 16</div></div>
+      <div class="prog-pct" id="prog-pct">6%</div>
+    </div>
+    <div class="bar"><div class="bf" id="prog-bar"></div></div>
+    <div class="years"><div class="yr cur"></div><div class="yr"></div><div class="yr"></div><div class="yr"></div></div>
+  </div>
+  <div class="concept card gap" style="border-left:3px solid var(--acc);border-radius:0 var(--r) var(--r) 0">
+    <div class="c-lbl">Spell of the day</div>
+    <div class="c-ttl">Discovery vs Delivery</div>
+    <div class="c-body">Most PMs spend 80% on delivery (building it right) and 20% on discovery (building the right thing). Cagan says reverse it. Your call auditor already did this — you discovered the 5% coverage problem <em>before</em> building, not after.</div>
+  </div>
+  <div class="gap"><div class="pad"><div class="seclbl">Owl Post</div><div class="secname">Openings that flew in</div></div></div>
+  <div class="jprev" id="jprev"></div>
+  <div class="foot-motto">✦ Mischief Managed ✦</div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-curriculum" class="tab">
+  <div class="pad"><div class="seclbl">The Curriculum</div><div class="secname">Four years, sixteen weeks</div></div>
+  <div class="ptabs">
+    <div class="pt on" data-p="1" onclick="switchPhase(1)">Year 1 · Fundamentals</div>
+    <div class="pt" data-p="2" onclick="switchPhase(2)">Year 2 · Product Sense</div>
+    <div class="pt" data-p="3" onclick="switchPhase(3)">Year 3 · AI &amp; Metrics</div>
+    <div class="pt" data-p="4" onclick="switchPhase(4)">Year 4 · Apply</div>
+  </div>
+  <div class="wknav">
+    <button class="wkb" onclick="changeWk(-1)">‹</button>
+    <div class="wki"><div class="wkttl" id="wk-ttl">Week 1</div><div class="wksub" id="wk-sub">&nbsp;</div></div>
+    <div class="wkof" id="wk-of">1 / 16</div>
+    <button class="wkb" onclick="changeWk(1)">›</button>
+  </div>
+  <div class="tasks" id="task-list"></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-pensieve" class="tab">
+  <div class="pad"><div class="seclbl">The Pensieve</div><div class="secname">Memories to watch, in order</div></div>
+  <div class="pintro">Watch each memory in sequence — videos play right here, no leaving the app. Cast the spell (quiz) to lock in the concept and earn house points. Ad-free sources are flagged in green. (YouTube videos may still show YouTube's own ads unless you have Premium.)</div>
+  <div class="ptabs">
+    <div class="pt on" data-vp="1" onclick="switchVideoYear(1)">Year 1</div>
+    <div class="pt" data-vp="2" onclick="switchVideoYear(2)">Year 2</div>
+    <div class="pt" data-vp="3" onclick="switchVideoYear(3)">Year 3</div>
+    <div class="pt" data-vp="4" onclick="switchVideoYear(4)">Year 4</div>
+  </div>
+  <div class="vpath"><div class="vpath-inner" id="video-list"></div></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-library" class="tab">
+  <div class="pad"><div class="seclbl">The Library</div><div class="secname">Every volume, one shelf</div></div>
+  <div class="shelf"><div class="spines" id="shelf-spines"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+      <span style="font-size:13px;color:var(--ink2);font-style:italic">11 volumes · tap a spine to read</span>
+      <span style="font-size:12px;color:var(--acc);font-style:italic">🔒 Restricted = advanced</span>
+    </div>
+  </div>
+  <div class="gap"><div class="pad"><div class="seclbl">Your reading</div><div class="secname">Read in-app, track progress</div></div></div>
+  <div class="books" id="book-list"></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-owl" class="tab">
+  <div class="pad"><div class="seclbl">Owl Post</div><div class="secname">Openings, fit-scored for you</div></div>
+  <div class="filters">
+    <div class="fb on" data-f="all" onclick="filterJobs('all')">All</div>
+    <div class="fb" data-f="strong" onclick="filterJobs('strong')">Strong fit 80%+</div>
+    <div class="fb" data-f="new" onclick="filterJobs('new')">New today</div>
+    <div class="fb" data-f="internal" onclick="filterJobs('internal')">Internal</div>
+  </div>
+  <div id="jlist"></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-goblet" class="tab">
+  <div class="pad"><div class="seclbl">The Goblet of Fire</div><div class="secname">Your application pipeline</div></div>
+  <div class="kbscroll" id="kanban"></div>
+  <div style="padding:14px 18px 0"><div class="card" style="font-size:14px;color:var(--ink2)"><strong style="font-family:var(--disp);color:var(--ink)">How it works:</strong> each locker room from Owl Post drops a card into Saved. Move it along as you apply, interview and hear back.</div></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-duel" class="tab">
+  <div class="pad"><div class="seclbl">The Duelling Club</div><div class="secname">Spells (the question bank)</div></div>
+  <div class="qcats" id="qcat-list"></div>
+  <div class="gap"><div class="pad"><div class="seclbl">Your frameworks</div><div class="secname">Quick-reference incantations</div></div></div>
+  <div class="fwgrid">
+    <div class="fw"><div class="fwname">CIRCLES</div><div class="fwfull">Product design</div><div class="fws"><b>C</b>omprehend · <b>I</b>dentify user · <b>R</b>eport needs · <b>C</b>ut/prioritise · <b>L</b>ist solutions · <b>E</b>valuate · <b>S</b>ummarise</div></div>
+    <div class="fw"><div class="fwname">STAR</div><div class="fwfull">Behavioural</div><div class="fws"><b>S</b>ituation · <b>T</b>ask · <b>A</b>ction · <b>R</b>esult. Spend half your time on Action.</div></div>
+    <div class="fw"><div class="fwname">RICE</div><div class="fwfull">Prioritisation</div><div class="fws"><b>R</b>each × <b>I</b>mpact × <b>C</b>onfidence ÷ <b>E</b>ffort = score.</div></div>
+    <div class="fw"><div class="fwname">AARRR</div><div class="fwfull">Pirate metrics</div><div class="fws"><b>A</b>cquisition · <b>A</b>ctivation · <b>R</b>etention · <b>R</b>eferral · <b>R</b>evenue</div></div>
+    <div class="fw"><div class="fwname">JTBD</div><div class="fwfull">Jobs-to-be-done</div><div class="fws">When I… I want to… so I can… Focuses on motivation, not features.</div></div>
+    <div class="fw"><div class="fwname">North Star</div><div class="fwfull">One metric that matters</div><div class="fws">A single leading metric that reflects core user value and predicts revenue.</div></div>
+  </div>
+  <button class="mockcta" onclick="openMock()">⚔ Enter a duel (mock interview)</button>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-hogsmeade" class="tab">
+  <div class="pad"><div class="seclbl">Hogsmeade</div><div class="secname">Fun, pointed at the goal</div></div>
+  <div class="fungrid" id="fun-list"></div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-prd" class="tab">
+  <div class="prd-section">
+    <div class="seclbl">Educational Decree</div>
+    <div style="font-family:var(--disp);font-size:21px;font-weight:700">PM Launchpad — PRD</div>
+    <div style="font-size:13px;color:var(--ink3);font-style:italic;margin-bottom:6px">Product Requirements · v2.0 · Hogwarts edition</div>
+    <div class="prd-h2">1. Problem</div>
+    <div class="prd-p">Ujjwal is a full-time Business Analyst at NoBroker with 4 years of field experience and 5 production AI tools shipped solo. He wants to become a Product Manager within 4 months, without an MBA, while holding a full-time job — only ~1 hr/day on weekdays and 3–4 hrs on weekends.</div>
+    <div class="prd-h2">2. The chambers</div>
+    <table class="prd-table"><tr><th>Chamber</th><th>What it does</th></tr>
+      <tr><td>Great Hall</td><td>Dashboard: house points, today's lesson, 4-year progress, spell of the day, owls.</td></tr>
+      <tr><td>Curriculum</td><td>16-week roadmap across 4 years, week navigator, task checklist (localStorage).</td></tr>
+      <tr><td>The Pensieve</td><td>Sequenced video lessons that play in-app, each with a concept quiz.</td></tr>
+      <tr><td>The Library</td><td>11 books as spines + in-app PDF reader for books you own + progress.</td></tr>
+      <tr><td>Owl Post</td><td>Fit-scored jobs with apply links and auto-built locker rooms.</td></tr>
+      <tr><td>Goblet of Fire</td><td>Application Kanban: Saved → Applied → Interview → Offer / Rejected.</td></tr>
+      <tr><td>Duelling Club</td><td>Question bank, 6 frameworks, mock-interview duels.</td></tr>
+      <tr><td>Hogsmeade</td><td>Fun but on-goal: founder docs, teardowns, free courses.</td></tr>
+    </table>
+    <div class="prd-h2">3. Zero-cost stack</div>
+    <table class="prd-table"><tr><th>Layer</th><th>Tool</th><th>Cost</th></tr>
+      <tr><td>Hosting</td><td>GitHub Pages (static)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+      <tr><td>Database</td><td>Google Sheets (Phase B)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+      <tr><td>Agent / cron</td><td>Google Apps Script (Phase B)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+      <tr><td>AI</td><td>Gemini Flash free tier (Phase B)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+      <tr><td>Job discovery</td><td>Google Custom Search API (Phase B)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+      <tr><td>WhatsApp owl</td><td>Interakt free tier (Phase B)</td><td><span class="tag-pill tag-free">Free</span></td></tr>
+    </table>
+    <div class="prd-h2">4. Build phases</div>
+    <div class="prd-ul">
+      <li class="prd-li"><strong>Phase A (this build):</strong> hosted static app — all chambers, in-app video, PDF reader, apply links, animations, localStorage progress</li>
+      <li class="prd-li"><strong>Phase B:</strong> Google Sheets + Apps Script — real job auto-pull, AI fit scoring, WhatsApp owl</li>
+    </div>
+  </div>
+  <div class="bpad"></div>
+</section>
+</div>
+
+<nav id="bnav">
+  <div class="bni on" data-t="hall" onclick="sw('hall')"><span class="bni-ic">🏛</span>Hall</div>
+  <div class="bni" data-t="curriculum" onclick="sw('curriculum')"><span class="bni-ic">📜</span>Learn</div>
+  <div class="bni" data-t="pensieve" onclick="sw('pensieve')"><span class="bni-ic">🔮</span>Watch</div>
+  <div class="bni" data-t="owl" onclick="sw('owl')"><span class="bni-ic">🦉</span>Owls</div>
+  <div class="bni" onclick="openSheet()"><span class="bni-ic">☰</span>More</div>
+</nav>
+</div>
+
+<div id="more-sheet" class="mover" hidden>
+  <div class="mbox">
+    <div class="mttl">More chambers</div>
+    <div class="msub">The rest of the castle</div>
+    <div class="sheet-list">
+      <div class="sheet-item" onclick="sheetGo('library')"><span class="ic">📚</span> The Library</div>
+      <div class="sheet-item" onclick="sheetGo('goblet')"><span class="ic">🔥</span> Goblet of Fire · Applications</div>
+      <div class="sheet-item" onclick="sheetGo('duel')"><span class="ic">⚔</span> Duelling Club · Interview prep</div>
+      <div class="sheet-item" onclick="sheetGo('hogsmeade')"><span class="ic">🏘</span> Hogsmeade · Fun</div>
+      <div class="sheet-item" onclick="sheetGo('prd')"><span class="ic">📋</span> The Decree · PRD</div>
+    </div>
+    <div class="macts"><button class="btn g mclose" onclick="closeSheet()">Close</button></div>
+  </div>
+</div>
+
+<div id="book-modal" class="mover" hidden>
+  <div class="mbox">
+    <div class="mttl" id="bk-title">Book</div>
+    <div class="msub" id="bk-sub"></div>
+    <div id="bk-body"></div>
+    <div class="macts"><button class="btn g mclose" onclick="closeBook()">Close</button></div>
+  </div>
+</div>
+
+<div id="mock-modal" class="mover" hidden>
+  <div class="mbox">
+    <div class="mttl">⚔ The Duel</div>
+    <div class="msub" id="mock-cat-label">Product Design</div>
+    <div class="mq" id="mock-q">Loading…</div>
+    <textarea class="mta" id="mock-ans" placeholder="Cast your answer. Use CIRCLES or STAR — state a decision you made and the trade-off you weighed."></textarea>
+    <div class="macts">
+      <button class="btn g mclose" onclick="closeMock()">Retreat</button>
+      <button class="btn p" onclick="nextQ()">Next spell →</button>
+    </div>
+    <div class="mhint">Aim for 90–120 seconds spoken. Bullet first, then expand. After each: did I name a decision and a trade-off?</div>
+  </div>
+</div>
+
+<div id="locker-modal" class="mover" hidden>
+  <div class="mbox">
+    <div class="mttl" id="lk-title">Locker Room</div>
+    <div class="msub" id="lk-sub">Auto-built for this opening</div>
+    <div class="ltabs">
+      <div class="lt on" onclick="switchLocker('questions')">10 Questions</div>
+      <div class="lt" onclick="switchLocker('cv')">CV rewrite</div>
+      <div class="lt" onclick="switchLocker('msg')">Cold message</div>
+      <div class="lt" onclick="switchLocker('brief')">Company brief</div>
+    </div>
+    <div class="ls on" id="ls-questions"><div id="lq-list"></div></div>
+    <div class="ls" id="ls-cv"><div style="font-size:13px;color:var(--ink2);margin-bottom:8px;font-style:italic">Bullets rewritten for this JD's keywords.</div><pre class="cb" id="lk-cv-content"></pre><button class="copybtn" onclick="copyEl('lk-cv-content')">⎘ Copy</button></div>
+    <div class="ls" id="ls-msg"><div style="font-size:13px;color:var(--ink2);margin-bottom:8px;font-style:italic">Send manually — copy, personalise, send from your own account.</div><pre class="cb" id="lk-msg-content"></pre><button class="copybtn" onclick="copyEl('lk-msg-content')">⎘ Copy</button></div>
+    <div class="ls" id="ls-brief"><div class="lq" id="lk-brief-content"></div></div>
+    <div class="macts"><button class="btn g mclose" onclick="closeLocker()">Close</button><a class="btn p" id="lk-apply" href="#" target="_blank" rel="noopener">Apply ↗</a></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
