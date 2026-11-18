@@ -312,34 +312,73 @@ img{max-width:100%;}
 .copybtn{display:inline-flex;align-items:center;gap:5px;font-family:var(--disp);font-size:11px;color:var(--acc);cursor:pointer;background:var(--accsoft);border:none;padding:5px 11px;border-radius:6px;margin-top:7px;}
 pre.cb{background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:12px;font-size:13px;color:var(--ink2);line-height:1.65;overflow-x:auto;white-space:pre-wrap;font-family:var(--body);}
 
-/* PDF reader — Full-screen immersive Hogwarts library */
-#book-modal{background:rgba(5,3,1,.95);z-index:100;}
+/* PDF reader — Full-screen immersive book experience */
+#book-modal{background:rgba(5,3,1,.97);z-index:100;}
 #book-modal .mbox{max-width:100%;width:100%;height:100vh;max-height:100vh;border-radius:0;background:var(--bg);border:none;padding:0;overflow:hidden;display:flex;flex-direction:column;margin:0;animation:none;}
-.bk-header{background:var(--acc);color:#fff;padding:14px 22px 10px;position:relative;overflow:hidden;flex-shrink:0;display:flex;align-items:center;gap:14px;}
+.bk-header{background:var(--acc);color:#fff;padding:12px 22px;position:relative;overflow:hidden;flex-shrink:0;display:flex;align-items:center;gap:14px;}
 .bk-header::after{content:"";position:absolute;right:-20px;top:-20px;width:80px;height:80px;border:1px solid rgba(255,255,255,.12);border-radius:50%;}
-.bk-header .mttl{color:#fff;margin:0;font-size:18px;flex:1;}
-.bk-header .msub{color:rgba(255,255,255,.8);margin:2px 0 0;font-size:12px;}
-.bk-header .bk-close-x{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .15s;flex-shrink:0;z-index:2;}
+.bk-header .mttl{color:#fff;margin:0;font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-header .msub{color:rgba(255,255,255,.75);margin:2px 0 0;font-size:11px;}
+.bk-header .bk-close-x{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .15s;flex-shrink:0;z-index:2;}
 .bk-header .bk-close-x:hover{background:rgba(255,255,255,.3);}
-.bk-content{padding:0;flex:1;overflow-y:auto;display:flex;flex-direction:column;}
-.pdfbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 22px;background:var(--accsoft);border-bottom:1px solid var(--line);flex-shrink:0;}
-.pdfbar .btn{font-size:12px;padding:7px 14px;border-color:var(--acc);font-weight:600;}
-.pdfpage{font-family:var(--disp);font-size:14px;color:var(--acc);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
-#pdf-text-wrap canvas{filter:sepia(.15) contrast(1.05);border-radius:4px;}
+.bk-content{padding:0;flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Reader bar */
+.pdfbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 22px;background:var(--bg3);border-bottom:1px solid var(--line);flex-shrink:0;}
+.pdfbar .btn{font-size:11px;padding:6px 12px;border-color:var(--line2);font-weight:600;}
+.pdfpage{font-family:var(--disp);font-size:13px;color:var(--acc);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+
+/* Page container with click zones */
+.page-container{flex:1;overflow:hidden;position:relative;display:flex;}
+.page-zone{position:absolute;top:0;bottom:0;z-index:2;cursor:pointer;opacity:0;transition:opacity .15s;}
+.page-zone:hover{opacity:1;}
+.page-zone-left{left:0;width:80px;background:linear-gradient(to right,rgba(116,0,1,.08),transparent);}
+.page-zone-right{right:0;width:80px;background:linear-gradient(to left,rgba(116,0,1,.08),transparent);}
+.page-zone-hint{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--disp);font-size:22px;color:var(--acc);opacity:.6;}
+.page-zone-left .page-zone-hint{left:24px;}
+.page-zone-right .page-zone-hint{right:24px;}
+
+/* Page wrapper with animation */
+.page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.page-inner{max-width:680px;width:100%;margin:0 auto;padding:32px 40px 48px;min-height:100%;box-sizing:border-box;}
+@media(max-width:600px){.page-inner{padding:20px 16px 32px;max-width:100%;}}
+
+/* Page turn animation */
+.page-inner.turn-left{animation:pageTurnLeft .3s ease-out;}
+.page-inner.turn-right{animation:pageTurnRight .3s ease-out;}
+@keyframes pageTurnLeft{0%{opacity:0;transform:translateX(-40px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes pageTurnRight{0%{opacity:0;transform:translateX(40px);}100%{opacity:1;transform:translateX(0);}}
+
+/* Page frame — consistent border for every page */
+.page-frame{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:36px 40px;position:relative;box-shadow:0 1px 8px rgba(0,0,0,.06),inset 0 1px 4px rgba(0,0,0,.03);overflow:hidden;}
+@media(max-width:600px){.page-frame{padding:20px 14px;border-radius:var(--rs);}
+.page-frame::before{top:8px;left:8px;right:8px;bottom:8px;}
+.page-zone{display:none;}
+}
+.page-frame::before{content:"";position:absolute;top:12px;left:12px;right:12px;bottom:12px;border:1px solid var(--line);border-radius:calc(var(--r) - 4px);pointer-events:none;opacity:.35;}
+
+/* Page number ornament */
+.tt-page-num{text-align:center;font-family:var(--disp);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--acc2);margin-bottom:20px;padding-bottom:14px;position:relative;}
+.tt-page-num::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:60px;height:1px;background:linear-gradient(to right,transparent,var(--line2),transparent);}
+
+/* Consistent typography for all books */
+.tt-heading{font-family:var(--disp);font-size:21px;font-weight:700;color:var(--ink);margin:28px 0 12px;line-height:1.35;letter-spacing:.01em;}
+.tt-heading:first-of-type{margin-top:4px;}
+.tt-subhead{font-family:var(--disp);font-size:15px;font-weight:600;color:var(--acc);margin:20px 0 8px;line-height:1.4;letter-spacing:.01em;}
+.tt-para{font-family:var(--body);font-size:17px;color:var(--ink);line-height:1.8;margin-bottom:12px;text-align:justify;text-align-last:left;hyphens:auto;overflow-wrap:break-word;word-break:break-word;}
+.tt-para strong{color:var(--ink);font-weight:700;}
+.tt-para em{color:var(--ink2);font-style:italic;}
+.tt-loading{text-align:center;padding:60px 20px;font-family:var(--disp);font-size:13px;color:var(--acc2);letter-spacing:.12em;}
+
+/* Canvas for scanned pages */
+#pdf-text-wrap canvas{filter:sepia(.12) contrast(1.04) brightness(.98);border-radius:var(--rs);box-shadow:0 1px 6px rgba(0,0,0,.08);}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #pdf-text-wrap canvas{filter:invert(.88) hue-rotate(180deg) sepia(.15) contrast(1.05);}}
 :root[data-theme="dark"] #pdf-text-wrap canvas{filter:invert(.88) hue-rotate(180deg) sepia(.15) contrast(1.05);}
 
-/* Themed text reader */
-#pdf-text-wrap{background:var(--bg2);border:none;border-radius:0;padding:32px 48px;overflow-y:auto;flex:1;box-shadow:inset 0 2px 12px rgba(0,0,0,.06);position:relative;width:100%;}
-@media(max-width:600px){#pdf-text-wrap{padding:20px 16px;}}
-.tt-page-num{text-align:center;font-family:var(--disp);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc2);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line);}
-.tt-heading{font-family:var(--disp);font-size:22px;font-weight:700;color:var(--ink);margin:24px 0 10px;line-height:1.3;}
-.tt-heading:first-of-type{margin-top:0;}
-.tt-subhead{font-family:var(--disp);font-size:16px;font-weight:600;color:var(--acc);margin:18px 0 8px;line-height:1.35;}
-.tt-para{font-family:var(--body);font-size:17px;color:var(--ink);line-height:1.75;margin-bottom:10px;text-align:justify;text-align-last:left;}
-.tt-para strong{color:var(--ink);font-weight:600;}
-.tt-para em{color:var(--ink2);font-style:italic;}
-.tt-loading{text-align:center;padding:40px;font-family:var(--disp);font-size:14px;color:var(--acc2);letter-spacing:.1em;}
+/* Footer ornament */
+.page-footer{text-align:center;margin-top:28px;padding-top:16px;position:relative;}
+.page-footer::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:1px;background:linear-gradient(to right,transparent,var(--acc2),transparent);}
+.page-footer-text{font-family:var(--disp);font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--ink3);}
 
 .pdf-note{font-size:14px;color:var(--ink2);line-height:1.6;}
 .pdf-note b{font-family:var(--disp);color:var(--ink);}

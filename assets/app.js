@@ -168,7 +168,12 @@ function openBook(encTitle){
   $('bk-sub').textContent=b.author+' · '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()">Next ›</button><span style="flex:1"></span><button class="btn g" id="bk-save" onclick="saveBookProgress()">💾 Save progress</button></div><div id="pdf-text-wrap" class="themed-text"><canvas id="pdf-canvas" style="display:none"></canvas></div>`;
+    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()">Next ›</button><span style="flex:1"></span><button class="btn g" id="bk-save" onclick="saveBookProgress()">💾 Save progress</button></div>
+    <div class="page-container">
+      <div class="page-zone page-zone-left" onclick="pdfPrev()"><span class="page-zone-hint">‹</span></div>
+      <div class="page-zone page-zone-right" onclick="pdfNext()"><span class="page-zone-hint">›</span></div>
+      <div class="page-scroll" id="pdf-text-wrap"><canvas id="pdf-canvas" style="display:none"></canvas></div>
+    </div>`;
     $('book-modal').hidden=false;
     loadPdf(b.pdf);
   }else{
@@ -204,13 +209,15 @@ function loadPdf(url){
     renderPdfPage();
   }).catch(e=>{$('pdf-text-wrap').innerHTML='<div class="pdf-note">Could not open this PDF. Check the filename in data.js matches the file in /books.</div>';});
 }
+var _turnDir='right';
 function renderPdfPage(){
   if(!pdfDoc)return;
   const wrap=$('pdf-text-wrap');
-  wrap.innerHTML='<div class="tt-loading">Summoning page…</div><canvas id="pdf-canvas" style="display:none"></canvas>';
+  wrap.innerHTML='<div class="page-inner"><div class="page-frame"><div class="tt-loading">Summoning page…</div></div></div><canvas id="pdf-canvas" style="display:none"></canvas>';
   pdfDoc.getPage(pdfPage).then(page=>{
     return page.getTextContent().then(tc=>{
       const hasText=tc.items.some(i=>i.str&&i.str.trim());
+      let content='';
       if(hasText){
         let html='',lastY=null;
         tc.items.forEach(item=>{
@@ -239,27 +246,43 @@ function renderPdfPage(){
           lastY=y;
         });
         if(lastY!==null) html+='</div>';
-        wrap.innerHTML=`<div class="tt-page-num">— Page ${pdfPage} —</div>${html}`;
+        content=html;
+        _finishPage(wrap,content,null);
       }else{
         const canvas=$('pdf-canvas');
         const scale=2;
         const vp=page.getViewport({scale});
         canvas.width=vp.width; canvas.height=vp.height;
-        canvas.style.cssText='display:block;max-width:680px;width:100%;height:auto;margin:0 auto;';
+        canvas.style.cssText='display:block;width:100%;height:auto;';
         page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise.then(()=>{
-          wrap.innerHTML='';
-          wrap.appendChild(document.createElement('div')).className='tt-page-num';
-          wrap.firstChild.textContent=`— Page ${pdfPage} —`;
-          wrap.appendChild(canvas);
+          _finishPage(wrap,null,canvas);
         });
       }
-      wrap.scrollTop=0;
       $('pdf-page').textContent=`Page ${pdfPage} of ${pdfDoc.numPages}`;
     });
   });
 }
-function pdfPrev(){if(pdfDoc&&pdfPage>1){pdfPage--;renderPdfPage();}}
-function pdfNext(){if(pdfDoc&&pdfPage<pdfDoc.numPages){pdfPage++;renderPdfPage();}}
+function _finishPage(wrap,html,canvas){
+  const inner=document.createElement('div');
+  inner.className='page-inner turn-'+_turnDir;
+  const frame=document.createElement('div');
+  frame.className='page-frame';
+  const pageNum=`<div class="tt-page-num">— Page ${pdfPage} —</div>`;
+  const footer=`<div class="page-footer"><span class="page-footer-text">${pdfTitle}</span></div>`;
+  if(canvas){
+    frame.innerHTML=pageNum;
+    frame.appendChild(canvas);
+    frame.insertAdjacentHTML('beforeend',footer);
+  }else{
+    frame.innerHTML=pageNum+html+footer;
+  }
+  inner.appendChild(frame);
+  wrap.innerHTML='';
+  wrap.appendChild(inner);
+  wrap.scrollTop=0;
+}
+function pdfPrev(){if(pdfDoc&&pdfPage>1){_turnDir='left';pdfPage--;renderPdfPage();}}
+function pdfNext(){if(pdfDoc&&pdfPage<pdfDoc.numPages){_turnDir='right';pdfPage++;renderPdfPage();}}
 function saveBookProgress(){
   if(!pdfDoc)return;
   const sp=LS.get('bookpage',{});sp[pdfTitle]=pdfPage;LS.set('bookpage',sp);
@@ -269,6 +292,12 @@ function saveBookProgress(){
   setTimeout(()=>{closeBook();renderLibrary();},600);
 }
 function closeBook(){$('book-modal').hidden=true;pdfDoc=null;}
+document.addEventListener('keydown',function(e){
+  if($('book-modal').hidden||!pdfDoc)return;
+  if(e.key==='ArrowLeft'){e.preventDefault();pdfPrev();}
+  else if(e.key==='ArrowRight'){e.preventDefault();pdfNext();}
+  else if(e.key==='Escape'){e.preventDefault();closeBook();}
+});
 
 /* OWL POST */
 function filterJobs(f){curFilter=f;document.querySelectorAll('[data-f]').forEach(el=>el.classList.toggle('on',el.dataset.f===f));renderJobs(f);}
