@@ -158,7 +158,7 @@ function renderLibrary(){
   }).join('');
 }
 
-/* PDF reader */
+/* PDF reader — themed text extraction */
 let pdfDoc=null, pdfPage=1, pdfTitle='';
 function openBook(encTitle){
   const title=decodeURIComponent(encTitle);
@@ -168,7 +168,7 @@ function openBook(encTitle){
   $('bk-sub').textContent=b.author+' · '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Loading…</span><button class="btn g" onclick="pdfNext()">Next ›</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">Save progress here</button></div><div id="pdf-canvas-wrap"><canvas id="pdf-canvas"></canvas></div>`;
+    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()">‹ Prev</button><span class="pdfpage" id="pdf-page">Loading…</span><button class="btn g" onclick="pdfNext()">Next ›</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">Save progress here</button></div><div id="pdf-text-wrap" class="themed-text"><canvas id="pdf-canvas" style="display:none"></canvas></div>`;
     $('book-modal').hidden=false;
     loadPdf(b.pdf);
   }else{
@@ -202,19 +202,60 @@ function loadPdf(url){
     pdfPage=saved[pdfTitle]||1;
     if(pdfPage>doc.numPages)pdfPage=1;
     renderPdfPage();
-  }).catch(e=>{$('pdf-canvas-wrap').innerHTML='<div class="pdf-note">Could not open this PDF. Check the filename in data.js matches the file in /books.</div>';});
+  }).catch(e=>{$('pdf-text-wrap').innerHTML='<div class="pdf-note">Could not open this PDF. Check the filename in data.js matches the file in /books.</div>';});
 }
 function renderPdfPage(){
   if(!pdfDoc)return;
+  const wrap=$('pdf-text-wrap');
+  wrap.innerHTML='<div class="tt-loading">Summoning page…</div><canvas id="pdf-canvas" style="display:none"></canvas>';
   pdfDoc.getPage(pdfPage).then(page=>{
-    const wrap=$('pdf-canvas-wrap'); const canvas=$('pdf-canvas'); const ctx=canvas.getContext('2d');
-    const avail=wrap.clientWidth-20;
-    const base=page.getViewport({scale:1});
-    const scale=Math.min(2,Math.max(0.5,avail/base.width));
-    const vp=page.getViewport({scale});
-    canvas.width=vp.width; canvas.height=vp.height;
-    page.render({canvasContext:ctx,viewport:vp});
-    $('pdf-page').textContent=`Page ${pdfPage} of ${pdfDoc.numPages}`;
+    return page.getTextContent().then(tc=>{
+      const hasText=tc.items.some(i=>i.str&&i.str.trim());
+      if(hasText){
+        let html='',lastY=null;
+        tc.items.forEach(item=>{
+          if(!item.str||!item.str.trim())return;
+          const y=Math.round(item.transform[5]);
+          const size=Math.round(item.transform[0])||12;
+          const isBold=item.fontName&&(/bold/i.test(item.fontName));
+          const isItalic=item.fontName&&(/italic|oblique/i.test(item.fontName));
+          const isHeading=size>=16;
+          const isSubhead=size>=13&&size<16&&isBold;
+          const text=item.str.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          if(lastY!==null&&Math.abs(y-lastY)>size*1.8){
+            html+='</div>';
+            if(isHeading) html+=`<div class="tt-heading">${text}`;
+            else if(isSubhead) html+=`<div class="tt-subhead">${text}`;
+            else html+=`<div class="tt-para">${text}`;
+          }else if(lastY===null){
+            if(isHeading) html+=`<div class="tt-heading">${text}`;
+            else if(isSubhead) html+=`<div class="tt-subhead">${text}`;
+            else html+=`<div class="tt-para">${text}`;
+          }else{
+            if(isBold&&!isItalic) html+=` <strong>${text}</strong>`;
+            else if(isItalic) html+=` <em>${text}</em>`;
+            else html+=` ${text}`;
+          }
+          lastY=y;
+        });
+        if(lastY!==null) html+='</div>';
+        wrap.innerHTML=`<div class="tt-page-num">— Page ${pdfPage} —</div>${html}`;
+      }else{
+        const canvas=$('pdf-canvas');
+        const scale=1.5;
+        const vp=page.getViewport({scale});
+        canvas.width=vp.width; canvas.height=vp.height;
+        canvas.style.cssText='display:block;width:100%;height:auto;border-radius:6px;';
+        page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise.then(()=>{
+          wrap.innerHTML='';
+          wrap.appendChild(document.createElement('div')).className='tt-page-num';
+          wrap.firstChild.textContent=`— Page ${pdfPage} —`;
+          wrap.appendChild(canvas);
+        });
+      }
+      wrap.scrollTop=0;
+      $('pdf-page').textContent=`Page ${pdfPage} of ${pdfDoc.numPages}`;
+    });
   });
 }
 function pdfPrev(){if(pdfDoc&&pdfPage>1){pdfPage--;renderPdfPage();}}
