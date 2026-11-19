@@ -1,4 +1,4 @@
-/* PM Launchpad — app logic. Vanilla JS, no build step. */
+/* PM Launchpad 2.0 — app logic. Vanilla JS, no build step. */
 
 let curWk=1, curPhase=1, curTab='hall', curVideoYear=1, curFilter='all';
 
@@ -7,6 +7,75 @@ const LS={
   set:(k,v)=>{try{localStorage.setItem('pml_'+k,JSON.stringify(v));}catch(e){}}
 };
 const $=id=>document.getElementById(id);
+
+/* ═══════════════════════════════════════════
+   HASH-BASED ROUTING & NAVIGATION HISTORY
+   ═══════════════════════════════════════════ */
+const NAV_HISTORY=[];
+function pushNav(hash){
+  if(NAV_HISTORY[NAV_HISTORY.length-1]!==hash)NAV_HISTORY.push(hash);
+}
+function navTo(tab,sub,evt){
+  const hash=sub?tab+'/'+sub:tab;
+  window.location.hash=hash;
+}
+function handleRoute(){
+  const raw=(window.location.hash||'#hall').slice(1);
+  const parts=raw.split('/');
+  const tab=parts[0]||'hall';
+  const sub=parts.slice(1).join('/');
+  pushNav(raw);
+  showTab(tab,sub);
+}
+function goBack(){
+  if(NAV_HISTORY.length>1){NAV_HISTORY.pop();const prev=NAV_HISTORY[NAV_HISTORY.length-1]||'hall';window.location.hash=prev;}
+  else{window.location.hash='hall';}
+}
+window.addEventListener('hashchange',handleRoute);
+
+function showTab(t,sub){
+  if($('book-modal')&&!$('book-modal').hidden)closeBook();
+  if($('mock-modal')&&!$('mock-modal').hidden)closeMock();
+  if($('locker-modal')&&!$('locker-modal').hidden)closeLocker();
+  closeSheet();
+  curTab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.id==='tab-'+t));
+  document.querySelectorAll('[data-t]').forEach(el=>el.classList.toggle('on',el.dataset.t===t));
+  updateBreadcrumb(t,sub);
+  if(t==='hall'){renderHall();window.scrollTo(0,0);}
+  else if(t==='curriculum')renderWeekTasks();
+  else if(t==='pensieve')renderVideos();
+  else if(t==='library')renderLibrary();
+  else if(t==='owl')renderJobs(curFilter);
+  else if(t==='goblet')renderKanban();
+  else if(t==='duel')renderCoach();
+  else if(t==='hogsmeade')renderFun();
+  else if(t==='vault')renderVault();
+  else if(t==='competency')renderCompetency();
+  else if(t==='knowledge')renderKnowledge();
+  else if(t==='settings')renderSettings();
+  if(t!=='hall')window.scrollTo(0,0);
+}
+
+function sw(t,evt){
+  flyOwl(evt);
+  navTo(t);
+}
+function openSheet(){$('more-sheet').hidden=false;}
+function closeSheet(){const s=$('more-sheet');if(s)s.hidden=true;}
+function sheetGo(t,evt){closeSheet();sw(t,evt);}
+
+/* BREADCRUMB */
+const TAB_NAMES={hall:'Great Hall',curriculum:'Curriculum',pensieve:'The Pensieve',library:'The Library',owl:'Owl Post',goblet:'Goblet of Fire',duel:'Duelling Club',hogsmeade:'Hogsmeade',prd:'The Decree',vault:'Portfolio Vault',competency:'Competency',knowledge:'Knowledge Vault',settings:'Settings'};
+function updateBreadcrumb(tab,sub){
+  const bc=$('breadcrumb');
+  if(!bc)return;
+  if(tab==='hall'){bc.innerHTML='';bc.hidden=true;return;}
+  bc.hidden=false;
+  let html='<span class="bc-link" onclick="navTo(\'hall\')">Great Hall</span><span class="bc-sep">›</span>';
+  html+='<span class="bc-cur">'+(TAB_NAMES[tab]||tab)+'</span>';
+  bc.innerHTML=html;
+}
 
 /* points + streak */
 function points(){return LS.get('points',0);}
@@ -27,6 +96,16 @@ function markStudied(){const s=streakObj();const today=new Date().toDateString()
 
 function loadState(){curWk=LS.get('wk',1);curPhase=Math.ceil(curWk/4);const th=LS.get('theme','');if(th)document.documentElement.setAttribute('data-theme',th);}
 
+/* TOAST NOTIFICATION */
+function toast(msg,type){
+  const t=document.createElement('div');
+  t.className='toast toast-'+(type||'info');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},2500);
+}
+
 function flyOwl(evt){
   if(!evt||window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
   const src=evt.target.closest('[data-t]')||evt.target;
@@ -43,24 +122,10 @@ function flyOwl(evt){
   document.body.appendChild(owl);
   owl.addEventListener('animationend',()=>owl.remove());
 }
-function sw(t,evt){
-  curTab=t; closeSheet(); flyOwl(evt);
-  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.id==='tab-'+t));
-  document.querySelectorAll('[data-t]').forEach(el=>el.classList.toggle('on',el.dataset.t===t));
-  window.scrollTo(0,0);
-  if(t==='curriculum')renderWeekTasks();
-  if(t==='pensieve')renderVideos();
-  if(t==='library')renderLibrary();
-  if(t==='owl')renderJobs(curFilter);
-  if(t==='goblet')renderKanban();
-  if(t==='duel')renderCoach();
-  if(t==='hogsmeade')renderFun();
-}
-function openSheet(){$('more-sheet').hidden=false;}
-function closeSheet(){const s=$('more-sheet');if(s)s.hidden=true;}
-function sheetGo(t,evt){closeSheet();sw(t,evt);}
 
-/* GREAT HALL */
+/* ═══════════════════════════════════════════
+   GREAT HALL DASHBOARD
+   ═══════════════════════════════════════════ */
 function renderHall(){
   const d=new Date();
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -80,17 +145,38 @@ function renderHall(){
   document.querySelectorAll('#tab-hall .yr').forEach((p,i)=>{p.classList.remove('done','cur');if(i+1<curPhase)p.classList.add('done');else if(i+1===curPhase)p.classList.add('cur');});
   $('sb-wk').textContent='W'+curWk;
   renderStreak(); animateCount();
+  renderReadingProgress();
+  renderCompetencyMini();
   if(!document.querySelector('.hall-ornament-tl')){
     var hall=$('tab-hall');
     if(hall){hall.insertAdjacentHTML('afterbegin','<div class="hall-ornament hall-ornament-tl">✦</div><div class="hall-ornament hall-ornament-tr">✦</div>');}
   }
   $('jprev').innerHTML=JOBS.slice(0,3).map(j=>{
     const fc=j.fit>=80?'c-ok':j.fit>=65?'c-wa':'c-mu';
-    return `<div class="jp" onclick="sw('owl')"><div class="jp-logo" style="background:${j.logobg}">${j.logo}</div><div style="flex:1;min-width:0;"><div class="jp-role">${j.role}</div><div class="jp-co">${j.co}</div></div><div class="jp-fit ${fc}">${j.fit}%</div></div>`;
+    return `<div class="jp" onclick="navTo('owl')"><div class="jp-logo" style="background:${j.logobg}">${j.logo}</div><div style="flex:1;min-width:0;"><div class="jp-role">${j.role}</div><div class="jp-co">${j.co}</div></div><div class="jp-fit ${fc}">${j.fit}%</div></div>`;
   }).join('');
 }
+function renderReadingProgress(){
+  const el=$('hall-reading');if(!el)return;
+  const all=allBooks();const prog=LS.get('bookprog',{});
+  let reading=0,done=0;
+  all.forEach(b=>{const p=prog[b.title]!==undefined?prog[b.title]:b.pct;if(p>=100)done++;else if(p>0)reading++;});
+  el.innerHTML=`<div class="mini-stat"><span class="mini-num">${done}</span><span class="mini-lbl">books done</span></div><div class="mini-stat"><span class="mini-num">${reading}</span><span class="mini-lbl">reading</span></div><div class="mini-stat"><span class="mini-num">${all.length-done-reading}</span><span class="mini-lbl">to start</span></div>`;
+}
+function renderCompetencyMini(){
+  const el=$('hall-competency');if(!el)return;
+  const scores=LS.get('competency',{});
+  const cats=['discovery','strategy','execution','analytics','technical','communication','leadership','design','experimentation'];
+  const labels=['Discovery','Strategy','Execution','Analytics','Technical','Communication','Leadership','Design','Experimentation'];
+  let total=0,count=0,weakest='',weakVal=999;
+  cats.forEach((c,i)=>{const s=scores[c]||0;total+=s;count++;if(s<weakVal){weakVal=s;weakest=labels[i];}});
+  const avg=count?Math.round(total/count):0;
+  el.innerHTML=`<div class="mini-stat"><span class="mini-num">${avg}<small>%</small></span><span class="mini-lbl">avg competency</span></div><div class="mini-stat"><span class="mini-num weak-txt">${weakest||'—'}</span><span class="mini-lbl">needs work</span></div>`;
+}
 
-/* CURRICULUM */
+/* ═══════════════════════════════════════════
+   CURRICULUM
+   ═══════════════════════════════════════════ */
 function switchPhase(p){curPhase=p;curWk=(p-1)*4+1;LS.set('wk',curWk);document.querySelectorAll('[data-p]').forEach(el=>el.classList.toggle('on',+el.dataset.p===p));renderWeekTasks();$('sb-wk').textContent='W'+curWk;}
 function changeWk(d){curWk=Math.max(1,Math.min(16,curWk+d));curPhase=Math.ceil(curWk/4);LS.set('wk',curWk);document.querySelectorAll('[data-p]').forEach(el=>el.classList.toggle('on',+el.dataset.p===curPhase));renderWeekTasks();$('sb-wk').textContent='W'+curWk;}
 function renderWeekTasks(){
@@ -104,9 +190,11 @@ function renderWeekTasks(){
     return `<div class="ti rise" style="animation-delay:${i*60}ms"><div class="tchk${dn?' done':''}" onclick="toggleTask(${i})">${dn?'✓':''}</div><div style="flex:1;min-width:0;"><div class="tittl${dn?' done':''}">${t.t}</div><div class="tisub">${t.s}</div></div><div class="titime">${t.m}</div></div>`;
   }).join('');
 }
-function toggleTask(i){markStudied();const done=LS.get('tasks_'+curWk,[]);const was=done[i];done[i]=!done[i];LS.set('tasks_'+curWk,done);if(!was)addPoints(5);renderWeekTasks();}
+function toggleTask(i){markStudied();const done=LS.get('tasks_'+curWk,[]);const was=done[i];done[i]=!done[i];LS.set('tasks_'+curWk,done);if(!was){addPoints(5);toast('+5 house points!','ok');}renderWeekTasks();}
 
-/* PENSIEVE */
+/* ═══════════════════════════════════════════
+   PENSIEVE
+   ═══════════════════════════════════════════ */
 function switchVideoYear(y){curVideoYear=y;document.querySelectorAll('[data-vp]').forEach(el=>el.classList.toggle('on',+el.dataset.vp===y));renderVideos();}
 function renderVideos(){
   const vids=VIDEOS[curVideoYear]||[];
@@ -120,7 +208,7 @@ function renderVideos(){
     return `<div class="vl${dn?' done':''}" id="vl-${key}"><div class="vnum">${i+1}</div>
       <div class="vt">${v.t}</div><div class="vsrc">${v.src}</div>
       <div class="vtags"><span class="vtag yr">Year ${curVideoYear}</span>${tag}<span class="vtag dur">${v.dur}</span></div>
-      <div class="vacts">${watchBtn}<button class="btn g" onclick="toggleQuiz('${key}')">🔮 Cast the spell</button></div>
+      <div class="vacts">${watchBtn}<button class="btn g" onclick="toggleQuiz('${key}')">\u{1F52E} Cast the spell</button></div>
       <div id="frame-${key}"></div>
       <div class="quiz" id="quiz-${key}"><div class="qlbl">Concept check</div><div class="qq">${v.q.q}</div>
       ${v.q.opts.map((o,oi)=>`<button class="qopt" onclick="answerQuiz('${key}',${oi},${v.q.c})">${o}</button>`).join('')}
@@ -131,7 +219,7 @@ function playVideo(key,ytid){
   const wrap=$('frame-'+key);
   if(!wrap) return;
   if(wrap.innerHTML.trim()!==''){wrap.innerHTML='';return;}
-  wrap.innerHTML=`<div class="vframe"><iframe src="https://www.youtube-nocookie.com/embed/${ytid}?autoplay=1&rel=0" title="video" allow="accelerate 2d; autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+  wrap.innerHTML=`<div class="vframe"><iframe src="https://www.youtube-nocookie.com/embed/${ytid}?autoplay=1&rel=0" title="video" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
 }
 function toggleQuiz(key){$('quiz-'+key).classList.toggle('open');}
 function answerQuiz(key,chosen,correct){
@@ -143,36 +231,61 @@ function answerQuiz(key,chosen,correct){
   const qd=LS.get('quizdone',{}); const already=qd[key];
   if(chosen===correct){opts[chosen].classList.add('right');fb.className='qfb ok';fb.textContent=(already?'':'+10 points. ')+why;}
   else{opts[chosen].classList.add('wrong');opts[correct].classList.add('right');fb.className='qfb no';fb.textContent=why;}
-  if(!already){qd[key]=true;LS.set('quizdone',qd);$('vl-'+key).classList.add('done');if(chosen===correct)addPoints(10);markStudied();}
+  if(!already){qd[key]=true;LS.set('quizdone',qd);$('vl-'+key).classList.add('done');if(chosen===correct){addPoints(10);toast('+10 house points!','ok');}markStudied();}
 }
 
-/* LIBRARY */
+/* ═══════════════════════════════════════════
+   LIBRARY — Enhanced Bookshelf + Reader
+   ═══════════════════════════════════════════ */
 function allBooks(){let a=[];[1,2,3,4].forEach(p=>a=a.concat(BOOKS_BY_PHASE[p]));return a;}
+let libSearch='';
 function renderLibrary(){
   const all=allBooks(); const prog=LS.get('bookprog',{});
-  $('shelf-spines').innerHTML=all.map((b,i)=>{const h=108+((i*13)%42);return `<div class="spine" style="background:${b.color};height:${h}px;" title="${b.title}" onclick="openBook('${encodeURIComponent(b.title)}')">${b.title}</div>`;}).join('');
-  $('book-list').innerHTML=all.map((b,i)=>{
+  const q=libSearch.toLowerCase();
+  const filtered=q?all.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)):all;
+  $('shelf-spines').innerHTML=all.map((b,i)=>{
+    const h=108+((i*13)%42);
+    const p=prog[b.title]!==undefined?prog[b.title]:b.pct;
+    return `<div class="spine${p>=100?' spine-done':''}" style="background:${b.color};height:${h}px;" title="${b.title}" onclick="openBook('${encodeURIComponent(b.title)}')">${b.title}</div>`;
+  }).join('');
+  $('book-list').innerHTML=filtered.map((b,i)=>{
     const pct=prog[b.title]!==undefined?prog[b.title]:b.pct;
     const st=pct===0?'ns':pct>=100?'dn':'rd';
     const lbl={ns:'Not started',rd:'Reading',dn:'Done'}[st];
-    const readBtn=b.pdf?`<button class="btn p" onclick="openBook('${encodeURIComponent(b.title)}')">📖 Read</button>`:`<button class="btn g" onclick="openBook('${encodeURIComponent(b.title)}')">＋ Add your PDF</button>`;
-    return `<div class="bk rise" style="animation-delay:${i*45}ms"><div class="bksp" style="background:${b.color}">📖</div><div style="flex:1;min-width:0;"><div class="bkttl">${b.title}</div><div class="bkauth">${b.author}</div><div class="bktake">${b.take}</div>
+    const bookmarks=LS.get('bookmarks_'+b.title,[]);
+    const bmIcon=bookmarks.length?`<span class="bm-indicator" title="${bookmarks.length} bookmarks">\u{1F516}${bookmarks.length}</span>`:'';
+    const readBtn=b.pdf?`<button class="btn p" onclick="openBook('${encodeURIComponent(b.title)}')">\u{1F4D6} Read</button>`:`<button class="btn g" onclick="openBook('${encodeURIComponent(b.title)}')">＋ Add your PDF</button>`;
+    return `<div class="bk rise" style="animation-delay:${i*45}ms"><div class="bksp" style="background:${b.color}">\u{1F4D6}</div><div style="flex:1;min-width:0;"><div class="bkttl">${b.title}${bmIcon}</div><div class="bkauth">${b.author}</div><div class="bktake">${b.take}</div>
       <div class="bkrow"><span class="bkst ${st}">${lbl}</span><div class="bkbar"><div class="bkfill" style="width:${pct}%"></div></div><span class="bkpct">${pct}%</span></div>
       <div class="bkacts">${readBtn}<a class="btn g" href="${b.buy}" target="_blank" rel="noopener">Buy / borrow</a></div></div></div>`;
   }).join('');
 }
+function searchLibrary(val){libSearch=val;renderLibrary();}
 
-/* PDF reader — themed text extraction */
-let pdfDoc=null, pdfPage=1, pdfTitle='';
+/* ═══════════════════════════════════════════
+   PDF READER — Enhanced Kindle Experience
+   ═══════════════════════════════════════════ */
+let pdfDoc=null, pdfPage=1, pdfTitle='', readerZoom=100;
 function openBook(encTitle){
   const title=decodeURIComponent(encTitle);
   const b=allBooks().find(x=>x.title===title); if(!b) return;
   pdfTitle=title;
+  readerZoom=LS.get('reader_zoom',100);
   $('bk-title').textContent=title;
-  $('bk-sub').textContent=b.author+' · '+b.take;
+  $('bk-sub').textContent=b.author+' \xB7 '+b.take;
   const body=$('bk-body');
   if(b.pdf){
-    body.innerHTML=`<div class="pdfbar"><button class="btn g" onclick="pdfPrev()" title="Previous page (← key)">‹ Prev</button><span class="pdfpage" id="pdf-page">Summoning…</span><button class="btn g" onclick="pdfNext()" title="Next page (→ key)">Next ›</button><button class="sticky-note-btn" id="sticky-btn" onclick="toggleStickyNote()" style="margin-left:auto">\u{1F4DD} Add note</button><button class="btn g" id="bk-save" onclick="saveBookProgress()">\u{1F4BE} Save progress</button></div>
+    body.innerHTML=`<div class="pdfbar">
+      <button class="btn g rbtn" onclick="pdfPrev()" title="Previous page">‹ Prev</button>
+      <span class="pdfpage" id="pdf-page">Summoning…</span>
+      <button class="btn g rbtn" onclick="pdfNext()" title="Next page">Next ›</button>
+      <button class="sticky-note-btn" id="sticky-btn" onclick="toggleStickyNote()" style="margin-left:auto">\u{1F4DD} Note</button>
+      <button class="btn g rbtn" id="bk-bookmark" onclick="toggleBookmark()" title="Bookmark this page">\u{1F516}</button>
+      <button class="btn g rbtn" onclick="readerZoomIn()" title="Zoom in">A+</button>
+      <button class="btn g rbtn" onclick="readerZoomOut()" title="Zoom out">A–</button>
+      <button class="btn g rbtn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+      <button class="btn g rbtn" id="bk-save" onclick="saveBookProgress()">\u{1F4BE} Save</button>
+    </div>
     <div class="pdf-progress"><div class="pdf-progress-fill" id="pdf-prog-fill"></div></div>
     <div class="page-container">
       <div class="page-zone page-zone-left" onclick="pdfPrev()"><span class="page-zone-hint">‹</span></div>
@@ -204,7 +317,7 @@ function formatNotes(txt){
     return `<div class="npar">${t}</div>`;
   }).join('');
 }
-function saveManual(){const v=parseInt($('man-range').value)||0;const prog=LS.get('bookprog',{});prog[pdfTitle]=v;LS.set('bookprog',prog);markStudied();closeBook();renderLibrary();}
+function saveManual(){const v=parseInt($('man-range').value)||0;const prog=LS.get('bookprog',{});prog[pdfTitle]=v;LS.set('bookprog',prog);markStudied();toast('Progress saved!','ok');closeBook();renderLibrary();}
 function loadPdf(url){
   if(typeof pdfjsLib==='undefined'){$('pdf-page').textContent='PDF engine not loaded.';return;}
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -224,7 +337,6 @@ function renderPdfPage(){
   pdfDoc.getPage(pdfPage).then(page=>{
     return page.getTextContent().then(tc=>{
       const hasText=tc.items.some(i=>i.str&&i.str.trim());
-      let content='';
       if(hasText){
         let html='',lastY=null;
         tc.items.forEach(item=>{
@@ -253,8 +365,7 @@ function renderPdfPage(){
           lastY=y;
         });
         if(lastY!==null) html+='</div>';
-        content=html;
-        _finishPage(wrap,content,null);
+        _finishPage(wrap,html,null);
       }else{
         const canvas=$('pdf-canvas');
         const scale=2;
@@ -273,6 +384,7 @@ function renderPdfPage(){
 function _finishPage(wrap,html,canvas){
   const inner=document.createElement('div');
   inner.className='page-inner turn-'+_turnDir;
+  inner.style.fontSize=readerZoom+'%';
   const frame=document.createElement('div');
   frame.className='page-frame';
   const pageNum=`<div class="tt-page-num">— Page ${pdfPage} —</div>`;
@@ -289,23 +401,55 @@ function _finishPage(wrap,html,canvas){
   wrap.appendChild(inner);
   wrap.scrollTop=0;
   updateStickyBtn();
+  updateBookmarkBtn();
 }
 function pdfPrev(){if(pdfDoc&&pdfPage>1){_turnDir='left';pdfPage--;renderPdfPage();}}
 function pdfNext(){if(pdfDoc&&pdfPage<pdfDoc.numPages){_turnDir='right';pdfPage++;renderPdfPage();}}
+function pdfFirst(){if(pdfDoc){_turnDir='left';pdfPage=1;renderPdfPage();}}
+function pdfLast(){if(pdfDoc){_turnDir='right';pdfPage=pdfDoc.numPages;renderPdfPage();}}
+function readerZoomIn(){readerZoom=Math.min(150,readerZoom+10);LS.set('reader_zoom',readerZoom);var inner=document.querySelector('.page-inner');if(inner)inner.style.fontSize=readerZoom+'%';}
+function readerZoomOut(){readerZoom=Math.max(70,readerZoom-10);LS.set('reader_zoom',readerZoom);var inner=document.querySelector('.page-inner');if(inner)inner.style.fontSize=readerZoom+'%';}
+function toggleFullscreen(){
+  const el=$('book-modal');
+  if(!el)return;
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
+  else{el.requestFullscreen().catch(()=>{});}
+}
+function toggleBookmark(){
+  if(!pdfDoc)return;
+  const key='bookmarks_'+pdfTitle;
+  let bm=LS.get(key,[]);
+  const idx=bm.indexOf(pdfPage);
+  if(idx>=0){bm.splice(idx,1);toast('Bookmark removed');}
+  else{bm.push(pdfPage);bm.sort((a,b)=>a-b);toast('Page '+pdfPage+' bookmarked!','ok');}
+  LS.set(key,bm);
+  updateBookmarkBtn();
+}
+function updateBookmarkBtn(){
+  const btn=$('bk-bookmark');if(!btn)return;
+  const bm=LS.get('bookmarks_'+pdfTitle,[]);
+  btn.classList.toggle('active-bm',bm.includes(pdfPage));
+}
 function saveBookProgress(){
   if(!pdfDoc)return;
   const sp=LS.get('bookpage',{});sp[pdfTitle]=pdfPage;LS.set('bookpage',sp);
   const prog=LS.get('bookprog',{});prog[pdfTitle]=Math.round(pdfPage/pdfDoc.numPages*100);LS.set('bookprog',prog);
   markStudied();
+  toast('Progress saved ✔','ok');
   $('bk-save').textContent='Saved ✓';
-  setTimeout(()=>{closeBook();renderLibrary();},600);
+  setTimeout(()=>{if($('bk-save'))$('bk-save').textContent='\u{1F4BE} Save';},1500);
 }
 function closeBook(){$('book-modal').hidden=true;pdfDoc=null;document.body.classList.remove('book-open');}
 document.addEventListener('keydown',function(e){
   if($('book-modal').hidden||!pdfDoc)return;
   if(e.key==='ArrowLeft'){e.preventDefault();pdfPrev();}
   else if(e.key==='ArrowRight'){e.preventDefault();pdfNext();}
+  else if(e.key==='Home'){e.preventDefault();pdfFirst();}
+  else if(e.key==='End'){e.preventDefault();pdfLast();}
   else if(e.key==='Escape'){e.preventDefault();closeBook();}
+  else if(e.key==='b'||e.key==='B'){e.preventDefault();toggleBookmark();}
+  else if(e.key==='+'||e.key==='='){e.preventDefault();readerZoomIn();}
+  else if(e.key==='-'){e.preventDefault();readerZoomOut();}
 });
 (function(){var sx,sy;document.addEventListener('touchstart',function(e){if($('book-modal').hidden||!pdfDoc)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});document.addEventListener('touchend',function(e){if($('book-modal').hidden||!pdfDoc||sx===undefined)return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=undefined;if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx))return;if(dx<0)pdfNext();else pdfPrev();});})();
 
@@ -329,7 +473,7 @@ function saveStickyNote(){
   var ta=document.getElementById('sticky-ta');
   if(!ta)return;
   var txt=ta.value.trim();
-  if(txt)LS.set(getStickyKey(),txt); else LS.set(getStickyKey(),undefined);
+  if(txt){LS.set(getStickyKey(),txt);toast('Note saved','ok');}else{LS.set(getStickyKey(),undefined);}
   var wrap=document.getElementById('sticky-wrap');
   if(wrap)wrap.remove();
   updateStickyBtn();
@@ -339,16 +483,19 @@ function delStickyNote(){
   var wrap=document.getElementById('sticky-wrap');
   if(wrap)wrap.remove();
   updateStickyBtn();
+  toast('Note deleted');
 }
 function updateStickyBtn(){
   var btn=document.getElementById('sticky-btn');
   if(!btn)return;
   var has=getNote();
   btn.className='sticky-note-btn'+(has?' has-note':'');
-  btn.textContent=has?'\u{1F4DD} View note':'\u{1F4DD} Add note';
+  btn.textContent=has?'\u{1F4DD} View':'\u{1F4DD} Note';
 }
 
-/* OWL POST */
+/* ═══════════════════════════════════════════
+   OWL POST — Job Discovery
+   ═══════════════════════════════════════════ */
 function filterJobs(f){curFilter=f;document.querySelectorAll('[data-f]').forEach(el=>el.classList.toggle('on',el.dataset.f===f));renderJobs(f);}
 function renderJobs(f){
   let jobs=JOBS;
@@ -356,6 +503,7 @@ function renderJobs(f){
   else if(f==='new')jobs=jobs.filter(j=>j.isNew);
   else if(f==='internal')jobs=jobs.filter(j=>j.isInternal);
   const jl=$('jlist'); if(!jl)return;
+  if(!jobs.length){jl.innerHTML='<div class="empty-state">No owls match this filter.</div>';return;}
   jl.innerHTML=jobs.map((j,i)=>{
     const fc=j.fit>=80?'c-ok':j.fit>=65?'c-wa':'c-mu';
     const fl=j.fit>=80?'Strong fit':j.fit>=65?'Good fit':'Moderate';
@@ -363,17 +511,48 @@ function renderJobs(f){
     return `<div class="jc rise" style="animation-delay:${i*50}ms"><div class="jctop"><div class="jclogo" style="background:${j.logobg}">${j.logo}</div><div style="flex:1;min-width:0;"><div class="jcrole">${j.role}</div><div class="jcco">${j.co}</div></div><div class="jcfit"><div class="jcnum ${fc}">${j.fit}%</div><div class="jclbl ${fc}">${fl}</div></div></div>
     <div class="jctags">${j.tags.map(t=>{let c='';if(t.indexOf('₹')>-1)c=' sal';else if(t==='New')c=' new';return `<span class="jt${c}">${t}</span>`;}).join('')}</div>
     <div class="jcwhy">${j.why}</div>
-    <div class="jcacts"><button class="btn p" onclick="openLocker('${j.id}')">🔓 Locker room</button>${apply}</div></div>`;
+    <div class="jcacts"><button class="btn p" onclick="openLocker('${j.id}')">\u{1F513} Locker room</button>${apply}</div></div>`;
   }).join('');
 }
 
-/* GOBLET */
+/* ═══════════════════════════════════════════
+   GOBLET — Kanban with Drag & Drop
+   ═══════════════════════════════════════════ */
+function getKanban(){return LS.get('kanban_data',null)||KANBAN;}
+function saveKanban(data){LS.set('kanban_data',data);}
 function renderKanban(){
+  const data=getKanban();
   const kb=$('kanban'); if(!kb)return;
-  kb.innerHTML=KANBAN.map(col=>`<div class="kbc"><div class="kbh"><div class="kbst" style="background:${col.color}"></div><div class="kbname">${col.name}</div><div class="kbcnt">${col.cards.length}</div></div><div class="kbcards">${col.cards.map(c=>`<div class="ac2"><div class="acrole">${c.role}</div><div class="acco">${c.co}</div><div class="acrow"><span class="acdate">${c.date}</span><span class="acfit ${c.fc}">${c.fit}% fit</span></div></div>`).join('')}<button class="addcrd">+ Add</button></div></div>`).join('');
+  kb.innerHTML=data.map((col,ci)=>`<div class="kbc" data-col="${ci}"><div class="kbh"><div class="kbst" style="background:${col.color}"></div><div class="kbname">${col.name}</div><div class="kbcnt">${col.cards.length}</div></div><div class="kbcards" data-col="${ci}" ondragover="event.preventDefault();this.classList.add('kb-drag-over')" ondragleave="this.classList.remove('kb-drag-over')" ondrop="dropCard(event,${ci})">${col.cards.map((c,ri)=>`<div class="ac2" draggable="true" ondragstart="dragCard(event,${ci},${ri})"><div class="acrole">${c.role}</div><div class="acco">${c.co}</div><div class="acrow"><span class="acdate">${c.date}</span><span class="acfit ${c.fc}">${c.fit}% fit</span></div></div>`).join('')}<button class="addcrd" onclick="addKanbanCard(${ci})">+ Add</button></div></div>`).join('');
+}
+let dragFrom=null;
+function dragCard(e,col,row){dragFrom={col,row};e.dataTransfer.effectAllowed='move';}
+function dropCard(e,toCol){
+  e.preventDefault();e.currentTarget.classList.remove('kb-drag-over');
+  if(!dragFrom)return;
+  const data=getKanban();
+  const card=data[dragFrom.col].cards.splice(dragFrom.row,1)[0];
+  if(!card)return;
+  data[toCol].cards.push(card);
+  saveKanban(data);
+  renderKanban();
+  toast('Card moved to '+data[toCol].name,'ok');
+  dragFrom=null;
+}
+function addKanbanCard(colIdx){
+  const role=prompt('Role title:');if(!role)return;
+  const co=prompt('Company:');if(!co)return;
+  const data=getKanban();
+  const today=new Date();
+  data[colIdx].cards.push({role,co,date:today.toLocaleDateString('en-GB',{month:'short',day:'numeric'}),fit:0,fc:'c-mu'});
+  saveKanban(data);
+  renderKanban();
+  toast('Card added!','ok');
 }
 
-/* DUELLING CLUB */
+/* ═══════════════════════════════════════════
+   DUELLING CLUB
+   ═══════════════════════════════════════════ */
 function renderCoach(){
   const cl=$('qcat-list'); if(!cl)return;
   cl.innerHTML=QCATS.map((c,ci)=>`<div class="qc"><div class="qch" onclick="toggleQCat(${ci})"><span class="qcic">${c.ic}</span><span class="qcname">${c.name}</span><span class="qccnt">${c.qs.length} spells</span><span class="qcarr" id="qcarr-${ci}">▶</span></div><div class="qcitems" id="qci-${ci}">${c.qs.map(q=>`<div class="qi">${q}</div>`).join('')}</div></div>`).join('');
@@ -388,7 +567,7 @@ function renderFun(){
 /* MOCK DUEL */
 let mockPool=[], mockI=0;
 function openMock(){mockPool=QCATS.flatMap(c=>c.qs.map(q=>({q,cat:c.name})));mockPool.sort(()=>Math.random()-0.5);mockI=0;$('mock-ans').value='';showMockQ();$('mock-modal').hidden=false;}
-function showMockQ(){const it=mockPool[mockI%mockPool.length];$('mock-q').textContent=it.q;$('mock-cat-label').textContent=it.cat+' · Duel '+(mockI+1);}
+function showMockQ(){const it=mockPool[mockI%mockPool.length];$('mock-q').textContent=it.q;$('mock-cat-label').textContent=it.cat+' \xB7 Duel '+(mockI+1);}
 function nextQ(){mockI++;$('mock-ans').value='';showMockQ();}
 function closeMock(){$('mock-modal').hidden=true;}
 
@@ -396,7 +575,7 @@ function closeMock(){$('mock-modal').hidden=true;}
 function openLocker(id){
   const j=JOBS.find(x=>x.id===id); if(!j)return;
   $('lk-title').textContent=j.role+' — '+j.co;
-  $('lk-sub').textContent=j.fit+'% fit · '+j.tags.join(' · ');
+  $('lk-sub').textContent=j.fit+'% fit \xB7 '+j.tags.join(' \xB7 ');
   $('lq-list').innerHTML=(j.questions||[]).map((q,i)=>`<div class="lq">${i+1}. ${q}</div>`).join('');
   $('lk-cv-content').textContent=j.cv||'';
   $('lk-msg-content').textContent=j.msg||'';
@@ -407,12 +586,203 @@ function openLocker(id){
 function switchLocker(tab){const tabs=['questions','cv','msg','brief'];document.querySelectorAll('#locker-modal .lt').forEach((el,i)=>el.classList.toggle('on',tabs[i]===tab));document.querySelectorAll('#locker-modal .ls').forEach((el,i)=>el.classList.toggle('on',tabs[i]===tab));}
 function closeLocker(){$('locker-modal').hidden=true;}
 
-function copyEl(id){const el=$(id);if(!el)return;try{navigator.clipboard.writeText(el.textContent).catch(()=>{const r=document.createRange();r.selectNode(el);getSelection().removeAllRanges();getSelection().addRange(r);});}catch(e){}}
-function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme')||'';const next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);LS.set('theme',next);}
+function copyEl(id){const el=$(id);if(!el)return;try{navigator.clipboard.writeText(el.textContent).then(()=>toast('Copied!','ok')).catch(()=>{const r=document.createRange();r.selectNode(el);getSelection().removeAllRanges();getSelection().addRange(r);toast('Select all & copy');});}catch(e){}}
+function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme')||'';const next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);LS.set('theme',next);toast(next==='dark'?'Candlelight mode':'Daylight mode');}
 
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('mover'))e.target.hidden=true;});
 
-/* PHASE B — live jobs from the published Google Sheet (falls back to sample data) */
+/* Escape key closes any open modal */
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  if(!$('book-modal').hidden){closeBook();return;}
+  if(!$('mock-modal').hidden){closeMock();return;}
+  if(!$('locker-modal').hidden){closeLocker();return;}
+  if(!$('more-sheet').hidden){closeSheet();return;}
+});
+
+/* ═══════════════════════════════════════════
+   PORTFOLIO VAULT (New Chamber)
+   ═══════════════════════════════════════════ */
+function renderVault(){
+  const vaultEl=$('tab-vault');if(!vaultEl)return;
+  const projects=LS.get('vault_projects',[]);
+  const templates=[
+    {title:'RM Auto Assignment',problem:'Manual assignment of RMs to leads caused delays and uneven workload.'},
+    {title:'Early Warning System',problem:'No proactive alerts for at-risk deals or churning customers.'},
+    {title:'Commercial Servicing Dashboard',problem:'Fragmented data across tools made servicing insights hard to access.'},
+    {title:'Incentive & R&R System',problem:'Manual incentive tracking was error-prone and lacked transparency.'},
+    {title:'Visit Point Tracking',problem:'No visibility into field visit effectiveness and coverage gaps.'}
+  ];
+  let html='<div class="pad"><div class="seclbl">The Portfolio Vault</div><div class="secname">Your Product Case Studies</div><div class="sec-story">Document real product ownership. Each case study demonstrates your PM capabilities to hiring managers.</div></div>';
+  html+='<div class="vault-actions pad"><button class="btn p" onclick="addVaultProject()">+ New Project</button></div>';
+  if(!projects.length){
+    html+='<div class="pad"><div class="empty-state">No projects yet. Add your first case study or start from a template below.</div></div>';
+    html+='<div class="vault-templates pad"><div class="sec-story" style="margin-top:14px">Quick-start templates from your NoBroker work:</div>';
+    html+=templates.map(t=>`<div class="vault-tpl" onclick="createFromTemplate('${t.title}','${t.problem.replace(/'/g,"\\'")}')"><div class="vt-title">${t.title}</div><div class="vt-desc">${t.problem}</div></div>`).join('');
+    html+='</div>';
+  }else{
+    html+='<div class="vault-list pad">'+projects.map((p,i)=>`<div class="vault-card"><div class="vc-title">${p.title}</div><div class="vc-problem">${p.problem||'No problem statement yet'}</div><div class="vc-meta"><span class="pill">${p.status||'Draft'}</span></div><div class="vc-acts"><button class="btn g" onclick="editVaultProject(${i})">Edit</button><button class="btn g" onclick="deleteVaultProject(${i})">Delete</button></div></div>`).join('')+'</div>';
+  }
+  vaultEl.innerHTML=html;
+}
+function addVaultProject(){
+  const title=prompt('Project title:');if(!title)return;
+  const projects=LS.get('vault_projects',[]);
+  projects.push({title,problem:'',target:'',impact:'',status:'Draft',created:new Date().toISOString()});
+  LS.set('vault_projects',projects);
+  renderVault();
+  toast('Project added!','ok');
+}
+function createFromTemplate(title,problem){
+  const projects=LS.get('vault_projects',[]);
+  projects.push({title,problem,target:'',impact:'',status:'Draft',created:new Date().toISOString()});
+  LS.set('vault_projects',projects);
+  renderVault();
+  toast('Template created!','ok');
+}
+function editVaultProject(i){
+  const projects=LS.get('vault_projects',[]);
+  const p=projects[i];if(!p)return;
+  const title=prompt('Project title:',p.title);if(title===null)return;
+  const problem=prompt('Problem statement:',p.problem);if(problem===null)return;
+  const impact=prompt('Business impact:',p.impact||'');if(impact===null)return;
+  p.title=title;p.problem=problem;p.impact=impact;
+  LS.set('vault_projects',projects);
+  renderVault();
+  toast('Project updated','ok');
+}
+function deleteVaultProject(i){
+  if(!confirm('Delete this project?'))return;
+  const projects=LS.get('vault_projects',[]);
+  projects.splice(i,1);
+  LS.set('vault_projects',projects);
+  renderVault();
+  toast('Project deleted');
+}
+
+/* ═══════════════════════════════════════════
+   COMPETENCY DASHBOARD (New Chamber)
+   ═══════════════════════════════════════════ */
+function renderCompetency(){
+  const el=$('tab-competency');if(!el)return;
+  const scores=LS.get('competency',{});
+  const cats=[
+    {key:'discovery',name:'Product Discovery',icon:'\u{1F50D}'},
+    {key:'strategy',name:'Product Strategy',icon:'\u{1F3AF}'},
+    {key:'execution',name:'Product Execution',icon:'⚙️'},
+    {key:'analytics',name:'Product Analytics',icon:'\u{1F4CA}'},
+    {key:'technical',name:'Technical PM',icon:'\u{1F4BB}'},
+    {key:'communication',name:'Communication',icon:'\u{1F4AC}'},
+    {key:'leadership',name:'Leadership',icon:'\u{1F451}'},
+    {key:'design',name:'Product Design',icon:'\u{1F3A8}'},
+    {key:'experimentation',name:'Experimentation',icon:'\u{1F9EA}'}
+  ];
+  let html='<div class="pad"><div class="seclbl">Competency Intelligence</div><div class="secname">Your Skill Map</div><div class="sec-story">Track your PM competencies. Rate yourself honestly — this drives your learning recommendations.</div></div>';
+  html+='<div class="comp-grid pad">';
+  cats.forEach(c=>{
+    const s=scores[c.key]||0;
+    const barColor=s>=70?'var(--ok)':s>=40?'var(--wa)':'var(--acc)';
+    html+=`<div class="comp-card"><div class="comp-head"><span class="comp-icon">${c.icon}</span><span class="comp-name">${c.name}</span><span class="comp-score">${s}%</span></div><div class="comp-bar"><div class="comp-fill" style="width:${s}%;background:${barColor}"></div></div><div class="comp-ctrl"><input type="range" min="0" max="100" value="${s}" oninput="updateCompetency('${c.key}',this.value,this.parentElement.previousElementSibling)" class="comp-range"><div class="comp-labels"><span>Beginner</span><span>Expert</span></div></div></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function updateCompetency(key,val,barEl){
+  const scores=LS.get('competency',{});
+  scores[key]=parseInt(val);
+  LS.set('competency',scores);
+  if(barEl){
+    const fill=barEl.querySelector('.comp-fill');
+    if(fill){fill.style.width=val+'%';fill.style.background=val>=70?'var(--ok)':val>=40?'var(--wa)':'var(--acc)';}
+  }
+  const scoreEl=barEl?barEl.previousElementSibling.querySelector('.comp-score'):null;
+  if(scoreEl)scoreEl.textContent=val+'%';
+}
+
+/* ═══════════════════════════════════════════
+   KNOWLEDGE VAULT (New Chamber)
+   ═══════════════════════════════════════════ */
+function renderKnowledge(){
+  const el=$('tab-knowledge');if(!el)return;
+  const notes=LS.get('knowledge_notes',[]);
+  let html='<div class="pad"><div class="seclbl">Knowledge Vault</div><div class="secname">Your Personal Wiki</div><div class="sec-story">Save notes, frameworks, interview answers, and insights from across your PM journey.</div></div>';
+  html+='<div class="pad"><button class="btn p" onclick="addKnowledgeNote()">+ Quick Note</button></div>';
+  if(!notes.length){
+    html+='<div class="pad"><div class="empty-state">Your knowledge vault is empty. Add your first note!</div></div>';
+  }else{
+    html+='<div class="knowledge-list pad">'+notes.map((n,i)=>`<div class="kn-card"><div class="kn-head"><span class="kn-tag">${n.tag||'General'}</span><span class="kn-date">${new Date(n.created).toLocaleDateString()}</span></div><div class="kn-title">${n.title}</div><div class="kn-body">${(n.body||'').slice(0,200)}${n.body&&n.body.length>200?'…':''}</div><div class="kn-acts"><button class="btn g" onclick="editKnNote(${i})">Edit</button><button class="btn g" onclick="deleteKnNote(${i})">Delete</button></div></div>`).join('')+'</div>';
+  }
+  el.innerHTML=html;
+}
+function addKnowledgeNote(){
+  const title=prompt('Note title:');if(!title)return;
+  const body=prompt('Content:');if(body===null)return;
+  const tag=prompt('Tag (e.g. Framework, Interview, Insight):','General');
+  const notes=LS.get('knowledge_notes',[]);
+  notes.unshift({title,body,tag:tag||'General',created:new Date().toISOString()});
+  LS.set('knowledge_notes',notes);
+  renderKnowledge();
+  toast('Note saved!','ok');
+}
+function editKnNote(i){
+  const notes=LS.get('knowledge_notes',[]);const n=notes[i];if(!n)return;
+  const title=prompt('Title:',n.title);if(title===null)return;
+  const body=prompt('Content:',n.body);if(body===null)return;
+  n.title=title;n.body=body;
+  LS.set('knowledge_notes',notes);
+  renderKnowledge();
+  toast('Note updated','ok');
+}
+function deleteKnNote(i){
+  if(!confirm('Delete this note?'))return;
+  const notes=LS.get('knowledge_notes',[]);
+  notes.splice(i,1);
+  LS.set('knowledge_notes',notes);
+  renderKnowledge();
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+   ═══════════════════════════════════════════ */
+function renderSettings(){
+  const el=$('tab-settings');if(!el)return;
+  const zoom=LS.get('reader_zoom',100);
+  const theme=LS.get('theme','');
+  html=`<div class="pad"><div class="seclbl">Settings</div><div class="secname">Personalisation</div></div>
+  <div class="settings-list pad">
+    <div class="set-group"><div class="set-label">Theme</div><div class="set-ctrl"><button class="btn ${theme!=='dark'?'p':'g'}" onclick="setTheme('light')">Daylight</button><button class="btn ${theme==='dark'?'p':'g'}" onclick="setTheme('dark')">Candlelight</button></div></div>
+    <div class="set-group"><div class="set-label">Reader font size</div><div class="set-ctrl"><span id="set-zoom">${zoom}%</span><input type="range" min="70" max="150" value="${zoom}" oninput="setReaderZoom(this.value)" style="flex:1"></div></div>
+    <div class="set-group"><div class="set-label">Export data</div><div class="set-ctrl"><button class="btn g" onclick="exportData()">Download backup</button></div></div>
+    <div class="set-group"><div class="set-label">Reset progress</div><div class="set-ctrl"><button class="btn g" style="color:var(--bad)" onclick="resetProgress()">Reset all</button></div></div>
+  </div>`;
+  el.innerHTML=html;
+}
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);LS.set('theme',t);toast(t==='dark'?'Candlelight mode':'Daylight mode');renderSettings();}
+function setReaderZoom(v){readerZoom=parseInt(v);LS.set('reader_zoom',readerZoom);const el=$('set-zoom');if(el)el.textContent=v+'%';}
+function exportData(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k.startsWith('pml_'))data[k]=localStorage.getItem(k);
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='pm-launchpad-backup.json';a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded','ok');
+}
+function resetProgress(){
+  if(!confirm('This will erase ALL progress, notes, and settings. Are you sure?'))return;
+  if(!confirm('Last chance! This cannot be undone.'))return;
+  for(let i=localStorage.length-1;i>=0;i--){
+    const k=localStorage.key(i);
+    if(k.startsWith('pml_'))localStorage.removeItem(k);
+  }
+  toast('Progress reset');
+  setTimeout(()=>window.location.reload(),500);
+}
+
+/* PHASE B — live jobs from the published Google Sheet */
 function parseCsv(text){
   const rows=[]; let row=[], cell='', q=false;
   for(let i=0;i<text.length;i++){
@@ -439,14 +809,14 @@ function loadLiveJobs(){
       const tags=[loc,sal,get('isNew').toLowerCase()==='true'?'New':''].filter(Boolean);
       const role=get('role')||'Product role';
       const co=get('company')||'Company';
-      return {id:get('id')||'live'+Math.random().toString(36).slice(2,7),co:co,role:role,logo:"🦉",logobg:"#e3ece4",
+      return {id:get('id')||'live'+Math.random().toString(36).slice(2,7),co:co,role:role,logo:"\u{1F989}",logobg:"#e3ece4",
         fit:fit,tags:tags,applyUrl:get('url'),why:get('why')||'Pulled by the owl and fit-scored for you.',
         isNew:get('isNew').toLowerCase()==='true',isStrong:fit>=80,isInternal:false,
         questions:(get('questions')||'').split(' || ').filter(Boolean),
         cv:defaultCv(),msg:defaultMsg(role,co),brief:get('brief')||''};
     }).filter(j=>j.fit>0).sort((a,b)=>b.fit-a.fit);
     if(live.length){ JOBS.length=0; live.forEach(j=>JOBS.push(j)); renderJobs(curFilter); renderHall(); }
-  }).catch(()=>{ /* keep sample data */ });
+  }).catch(()=>{});
 }
 
 /* Floating candles — Great Hall ceiling grid */
@@ -492,6 +862,7 @@ function spawnSparkles(){
   setTimeout(()=>burst.remove(),900);
 }
 
+/* INIT */
 loadState();
 renderHall();
 renderJobs('all');
@@ -499,3 +870,4 @@ renderKanban();
 renderCoach();
 loadLiveJobs();
 spawnCandles();
+handleRoute();

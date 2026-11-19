@@ -26,8 +26,12 @@
   <div class="sn" data-t="owl" onclick="sw('owl',event)"><span class="ic">🦉</span> Owl Post <span class="nb" id="sb-jcnt">5</span></div>
   <div class="sn" data-t="goblet" onclick="sw('goblet',event)"><span class="ic">🔥</span> Goblet of Fire</div>
   <div class="sn" data-t="duel" onclick="sw('duel',event)"><span class="ic">⚔</span> Duelling Club</div>
+  <div class="sn" data-t="vault" onclick="sw('vault',event)"><span class="ic">🏆</span> Portfolio Vault</div>
+  <div class="sn" data-t="competency" onclick="sw('competency',event)"><span class="ic">📊</span> Competency</div>
+  <div class="sn" data-t="knowledge" onclick="sw('knowledge',event)"><span class="ic">🧠</span> Knowledge Vault</div>
   <div class="sn" data-t="hogsmeade" onclick="sw('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade</div>
   <div class="sn" data-t="prd" onclick="sw('prd',event)"><span class="ic">📋</span> The Decree</div>
+  <div class="sn" data-t="settings" onclick="sw('settings',event)"><span class="ic">⚙</span> Settings</div>
   <div class="sb-pts">
     <div class="sb-ptn" id="sb-ptn">0</div>
     <div><div class="sb-ptl">house points</div><div class="sb-ptl" id="sb-streak" style="color:var(--ink3)">0-day streak</div></div>
@@ -43,6 +47,8 @@
     <button class="ibtn" onclick="toggleTheme()" aria-label="Toggle theme">☾</button>
   </div>
 </header>
+
+<div class="breadcrumb" id="breadcrumb" hidden></div>
 
 <section id="tab-hall" class="tab on">
   <div class="candle-layer" id="candle-layer"></div>
@@ -63,6 +69,16 @@
     <div class="t-ey">Today's Lesson · Year <span id="today-year">1</span></div>
     <div class="t-task" id="today-task">Read Inspired by Marty Cagan, Ch 1–10</div>
     <div class="t-pills"><span class="pill" id="today-time">45 min</span><span class="pill" id="today-phase">Year 1 · Fundamentals</span></div>
+  </div>
+  <div class="hall-dash">
+    <div class="hd-card" onclick="navTo('library')">
+      <div class="hd-label">Reading</div>
+      <div id="hall-reading" class="hd-body"></div>
+    </div>
+    <div class="hd-card" onclick="navTo('competency')">
+      <div class="hd-label">Competency</div>
+      <div id="hall-competency" class="hd-body"></div>
+    </div>
   </div>
   <div class="stats">
     <div class="sc"><div class="snum c-ok" id="stat-jobs">5</div><div class="slbl">owls waiting</div></div>
@@ -121,6 +137,9 @@
 
 <section id="tab-library" class="tab">
   <div class="pad"><div class="seclbl">The Library</div><div class="secname">The Restricted Section</div><div class="sec-story">Madam Pince guards these shelves fiercely. Each tome holds the knowledge of a PM grandmaster — read them cover to cover and earn your O.W.L.s.</div></div>
+  <div class="lib-search pad">
+    <input type="text" class="lib-search-input" placeholder="Search books by title or author..." oninput="searchLibrary(this.value)">
+  </div>
   <div class="shelf"><div class="spines" id="shelf-spines"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
       <span style="font-size:13px;color:var(--ink2);font-style:italic">11 volumes · tap a spine to read</span>
@@ -147,7 +166,7 @@
 <section id="tab-goblet" class="tab">
   <div class="pad"><div class="seclbl">The Goblet of Fire</div><div class="secname">Names from the flame</div><div class="sec-story">Drop your name into the Goblet and track where each application goes. The fire judges only the worthy — move cards through the pipeline as you advance.</div></div>
   <div class="kbscroll" id="kanban"></div>
-  <div style="padding:14px 18px 0"><div class="card" style="font-size:14px;color:var(--ink2)"><strong style="font-family:var(--disp);color:var(--ink)">How it works:</strong> each locker room from Owl Post drops a card into Saved. Move it along as you apply, interview and hear back.</div></div>
+  <div style="padding:14px 18px 0"><div class="card" style="font-size:14px;color:var(--ink2)"><strong style="font-family:var(--disp);color:var(--ink)">How it works:</strong> each locker room from Owl Post drops a card into Saved. Move it along as you apply, interview and hear back. Drag cards between columns.</div></div>
   <div class="bpad"></div>
 </section>
 
@@ -164,6 +183,18 @@
     <div class="fw"><div class="fwname">North Star</div><div class="fwfull">One metric that matters</div><div class="fws">A single leading metric that reflects core user value and predicts revenue.</div></div>
   </div>
   <button class="mockcta" onclick="openMock()">⚔ Enter a duel (mock interview)</button>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-vault" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-competency" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-knowledge" class="tab">
   <div class="bpad"></div>
 </section>
 
@@ -189,6 +220,9 @@
       <tr><td>Owl Post</td><td>Fit-scored jobs with apply links and auto-built locker rooms.</td></tr>
       <tr><td>Goblet of Fire</td><td>Application Kanban: Saved → Applied → Interview → Offer / Rejected.</td></tr>
       <tr><td>Duelling Club</td><td>Question bank, 6 frameworks, mock-interview duels.</td></tr>
+      <tr><td>Portfolio Vault</td><td>Case study builder for documenting real product ownership.</td></tr>
+      <tr><td>Competency</td><td>Self-assessment dashboard tracking 9 PM skill dimensions.</td></tr>
+      <tr><td>Knowledge Vault</td><td>Personal wiki for notes, frameworks, and insights.</td></tr>
       <tr><td>Hogsmeade</td><td>Fun but on-goal: founder docs, teardowns, free courses.</td></tr>
     </table>
     <div class="prd-h2">3. Zero-cost stack</div>
@@ -206,6 +240,10 @@
       <li class="prd-li"><strong>Phase B:</strong> Google Sheets + Apps Script — real job auto-pull, AI fit scoring, WhatsApp owl</li>
     </div>
   </div>
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-settings" class="tab">
   <div class="bpad"></div>
 </section>
 </div>
@@ -227,8 +265,12 @@
       <div class="sheet-item" onclick="sheetGo('library',event)"><span class="ic">📚</span> The Library</div>
       <div class="sheet-item" onclick="sheetGo('goblet',event)"><span class="ic">🔥</span> Goblet of Fire · Applications</div>
       <div class="sheet-item" onclick="sheetGo('duel',event)"><span class="ic">⚔</span> Duelling Club · Interview prep</div>
+      <div class="sheet-item" onclick="sheetGo('vault',event)"><span class="ic">🏆</span> Portfolio Vault</div>
+      <div class="sheet-item" onclick="sheetGo('competency',event)"><span class="ic">📊</span> Competency Dashboard</div>
+      <div class="sheet-item" onclick="sheetGo('knowledge',event)"><span class="ic">🧠</span> Knowledge Vault</div>
       <div class="sheet-item" onclick="sheetGo('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade · Fun</div>
       <div class="sheet-item" onclick="sheetGo('prd',event)"><span class="ic">📋</span> The Decree · PRD</div>
+      <div class="sheet-item" onclick="sheetGo('settings',event)"><span class="ic">⚙</span> Settings</div>
     </div>
     <div class="macts"><button class="btn g mclose" onclick="closeSheet()">Close</button></div>
   </div>
@@ -238,7 +280,7 @@
   <div class="mbox">
     <div class="bk-header">
       <div style="flex:1;min-width:0"><div class="mttl" id="bk-title">Book</div><div class="msub" id="bk-sub"></div></div>
-      <button class="bk-close-x" onclick="closeBook()" title="Close">✕</button>
+      <button class="bk-close-x" onclick="closeBook()" title="Close (Esc)">✕</button>
     </div>
     <div class="bk-content" id="bk-body"></div>
     <div class="macts"><button class="btn g mclose" onclick="closeBook()">📚 Close</button></div>
