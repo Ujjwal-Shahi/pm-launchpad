@@ -54,6 +54,11 @@ function showTab(t,sub){
   else if(t==='competency')renderCompetency();
   else if(t==='knowledge')renderKnowledge();
   else if(t==='settings')renderSettings();
+  else if(t==='timer')renderTimer();
+  else if(t==='journal')renderJournal();
+  else if(t==='analytics')renderAnalytics();
+  else if(t==='owlexam')renderOwlExam();
+  else if(t==='mentor')renderMentor();
   if(t!=='hall')window.scrollTo(0,0);
 }
 
@@ -66,7 +71,7 @@ function closeSheet(){const s=$('more-sheet');if(s)s.hidden=true;}
 function sheetGo(t,evt){closeSheet();sw(t,evt);}
 
 /* BREADCRUMB */
-const TAB_NAMES={hall:'Great Hall',curriculum:'Curriculum',pensieve:'The Pensieve',library:'The Library',owl:'Owl Post',goblet:'Goblet of Fire',duel:'Duelling Club',hogsmeade:'Hogsmeade',prd:'The Decree',vault:'Portfolio Vault',competency:'Competency',knowledge:'Knowledge Vault',settings:'Settings'};
+const TAB_NAMES={hall:'Great Hall',curriculum:'Curriculum',pensieve:'The Pensieve',library:'The Library',owl:'Owl Post',goblet:'Goblet of Fire',duel:'Duelling Club',hogsmeade:'Hogsmeade',prd:'The Decree',vault:'Portfolio Vault',competency:'Competency',knowledge:'Knowledge Vault',settings:'Settings',timer:'Study Timer',journal:'Decision Journal',analytics:'Analytics',owlexam:'O.W.L. Exam',mentor:'AI Mentor'};
 function updateBreadcrumb(tab,sub){
   const bc=$('breadcrumb');
   if(!bc)return;
@@ -92,7 +97,7 @@ function animateCount(){
 }
 function streakObj(){return LS.get('streak',{last:'',n:0});}
 function renderStreak(){const s=streakObj();const today=new Date().toDateString();const n=today===s.last?s.n:(s.n||0);const a=$('pc-streak');if(a)a.textContent=n;const b=$('sb-streak');if(b)b.textContent=n+'-day streak';}
-function markStudied(){const s=streakObj();const today=new Date().toDateString();if(s.last!==today){const y=new Date(Date.now()-86400000).toDateString();s.n=s.last===y?(s.n||0)+1:1;s.last=today;LS.set('streak',s);renderStreak();}}
+function markStudied(){const s=streakObj();const today=new Date().toDateString();if(s.last!==today){const y=new Date(Date.now()-86400000).toDateString();s.n=s.last===y?(s.n||0)+1:1;s.last=today;LS.set('streak',s);renderStreak();}const log=LS.get('streak_log',{});log[today]=true;LS.set('streak_log',log);}
 
 function loadState(){curWk=LS.get('wk',1);curPhase=Math.ceil(curWk/4);const th=LS.get('theme','');if(th)document.documentElement.setAttribute('data-theme',th);}
 
@@ -748,13 +753,25 @@ function renderSettings(){
   const el=$('tab-settings');if(!el)return;
   const zoom=LS.get('reader_zoom',100);
   const theme=LS.get('theme','');
-  html=`<div class="pad"><div class="seclbl">Settings</div><div class="secname">Personalisation</div></div>
+  const gemKey=LS.get('gemini_key','');
+  const html=`<div class="pad"><div class="seclbl">Settings</div><div class="secname">Personalisation</div></div>
   <div class="settings-list pad">
     <div class="set-group"><div class="set-label">Theme</div><div class="set-ctrl"><button class="btn ${theme!=='dark'?'p':'g'}" onclick="setTheme('light')">Daylight</button><button class="btn ${theme==='dark'?'p':'g'}" onclick="setTheme('dark')">Candlelight</button></div></div>
-    <div class="set-group"><div class="set-label">Reader font size</div><div class="set-ctrl"><span id="set-zoom">${zoom}%</span><input type="range" min="70" max="150" value="${zoom}" oninput="setReaderZoom(this.value)" style="flex:1"></div></div>
+    <div class="set-group"><div class="set-label">Reader font</div><div class="set-ctrl"><span id="set-zoom">${zoom}%</span><input type="range" min="70" max="150" value="${zoom}" oninput="setReaderZoom(this.value)" style="flex:1"></div></div>
     <div class="set-group"><div class="set-label">Export data</div><div class="set-ctrl"><button class="btn g" onclick="exportData()">Download backup</button></div></div>
-    <div class="set-group"><div class="set-label">Reset progress</div><div class="set-ctrl"><button class="btn g" style="color:var(--bad)" onclick="resetProgress()">Reset all</button></div></div>
-  </div>`;
+    <div class="set-group"><div class="set-label">Reset</div><div class="set-ctrl"><button class="btn g" style="color:var(--bad)" onclick="resetProgress()">Reset all</button></div></div>
+  </div>
+  <div class="pad gap"><div class="seclbl">AI Features</div><div class="secname">Gemini API Key</div><div class="sec-story">Your key is stored only in this browser. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--acc)">Get a free key ↗</a> — enables AI Mentor, Job Fit Scorer, and Mock Interview Evaluation.</div></div>
+  <div class="settings-list pad">
+    <div class="set-group"><div class="set-label">Gemini key</div><div class="set-ctrl"><input type="password" class="set-key-input" id="gemini-key-input" placeholder="AIza..." value="${gemKey}" style="flex:1"><button class="btn g" onclick="saveGeminiKey()">Save</button></div></div>
+  </div>
+  <div class="pad gap"><div class="seclbl">House Cup</div><div class="secname">Duel a friend</div><div class="sec-story">Share your stats code with a study partner — they paste it to see a side-by-side comparison. Zero backend, works instantly.</div></div>
+  <div class="settings-list pad">
+    <div class="set-group"><div class="set-label">My code</div><div class="set-ctrl"><button class="btn g" onclick="copyShareCode()">📋 Copy my stats code</button></div></div>
+    <div class="set-group"><div class="set-label">Friend's code</div><div class="set-ctrl"><input type="text" class="set-key-input" id="friend-code-input" placeholder="Paste their code here…" style="flex:1"><button class="btn g" onclick="compareWithFriend()">Compare ↗</button></div></div>
+  </div>
+  <div id="friend-compare"></div>
+  <div class="bpad"></div>`;
   el.innerHTML=html;
 }
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);LS.set('theme',t);toast(t==='dark'?'Candlelight mode':'Daylight mode');renderSettings();}
@@ -860,6 +877,438 @@ function spawnSparkles(){
   }
   document.body.appendChild(burst);
   setTimeout(()=>burst.remove(),900);
+}
+
+/* ═══════════════════════════════════════════
+   GEMINI AI HELPER
+   ═══════════════════════════════════════════ */
+async function geminiCall(prompt){
+  const key=LS.get('gemini_key','');
+  if(!key){toast('Add your Gemini API key in Settings','info');return null;}
+  try{
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key='+key,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const d=await r.json();
+    if(d.error){toast('Gemini: '+d.error.message);return null;}
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||null;
+  }catch(e){toast('Network error calling Gemini');return null;}
+}
+function saveGeminiKey(){const v=($('gemini-key-input')||{}).value||'';LS.set('gemini_key',v.trim());toast(v.trim()?'Gemini key saved!':'Key cleared','ok');}
+
+/* ═══════════════════════════════════════════
+   SETTINGS — SHARE CODE & HOUSE CUP
+   ═══════════════════════════════════════════ */
+function generateShareCode(){
+  const scores=LS.get('competency',{});
+  const cats=['discovery','strategy','execution','analytics','technical','communication','leadership','design','experimentation'];
+  const avg=Math.round(cats.reduce((s,c)=>s+(scores[c]||0),0)/cats.length);
+  const bookprog=LS.get('bookprog',{});
+  const booksDone=allBooks().filter(b=>(bookprog[b.title]||b.pct)>=100).length;
+  return btoa(JSON.stringify({pts:points(),streak:streakObj().n,booksDone,avg,name:'Ujjwal',ts:Date.now()}));
+}
+function copyShareCode(){
+  const code=generateShareCode();
+  navigator.clipboard.writeText(code).then(()=>toast('Stats code copied! Share it with your friend.','ok')).catch(()=>{toast('Code: '+code.slice(0,20)+'… (copy manually)');});
+}
+function compareWithFriend(){
+  const inp=$('friend-code-input');if(!inp||!inp.value.trim()){toast('Paste your friend\'s code first');return;}
+  try{
+    const them=JSON.parse(atob(inp.value.trim()));
+    const me=JSON.parse(atob(generateShareCode()));
+    const container=$('friend-compare');if(!container)return;
+    const c1=me.pts>them.pts?'c-ok':'c-mu';const c2=them.pts>=me.pts?'c-ok':'c-mu';
+    container.innerHTML=`<div class="pad"><div class="compare-wrap">
+      <div class="compare-title">🏆 House Cup Duel</div>
+      <div class="compare-grid">
+        <div class="cmp-head">You</div><div class="cmp-head"></div><div class="cmp-head">${them.name||'Friend'}</div>
+        <div class="cmp-val ${c1}">${me.pts}</div><div class="cmp-lbl">House pts</div><div class="cmp-val ${c2}">${them.pts}</div>
+        <div class="cmp-val">${me.streak}d</div><div class="cmp-lbl">Streak</div><div class="cmp-val">${them.streak}d</div>
+        <div class="cmp-val">${me.booksDone}</div><div class="cmp-lbl">Books done</div><div class="cmp-val">${them.booksDone}</div>
+        <div class="cmp-val">${me.avg}%</div><div class="cmp-lbl">Competency</div><div class="cmp-val">${them.avg}%</div>
+      </div>
+      <div class="cmp-verdict">${me.pts>them.pts?'🏆 You\'re ahead! Keep the streak alive.':me.pts===them.pts?'⚔️ It\'s a draw! Push harder.':'🔥 You\'re behind — earn more points!'}</div>
+    </div></div>`;
+  }catch(e){toast('Invalid share code','info');}
+}
+
+/* ═══════════════════════════════════════════
+   STUDY TIMER (Pomodoro)
+   ═══════════════════════════════════════════ */
+let timerMode='focus',timerSecs=25*60,timerRunning=false,timerInterval=null;
+const TIMER_FOCUS=25*60,TIMER_BREAK=5*60;
+function renderTimer(){
+  const el=$('tab-timer');if(!el)return;
+  const m=Math.floor(timerSecs/60).toString().padStart(2,'0');
+  const s=(timerSecs%60).toString().padStart(2,'0');
+  const sessions=LS.get('timer_sessions',0);
+  el.innerHTML=`<div class="pad"><div class="seclbl">Study Timer</div><div class="secname">The Hourglass</div><div class="sec-story">Focus for 25 minutes, earn 10 house points. Break for 5. Four sessions = one deep work block.</div></div>
+  <div class="timer-wrap">
+    <div class="timer-mode timer-mode-${timerMode}">${timerMode==='focus'?'⏳ Focus time':'☕ Break time'}</div>
+    <div class="timer-display" id="timer-display">${m}:${s}</div>
+    <div class="timer-label">${timerMode==='focus'?'Stay focused — wand at the ready':'Rest — the magic needs to settle'}</div>
+    <div class="timer-acts">
+      ${timerRunning?`<button class="btn p" onclick="pauseTimer()">⏸ Pause</button>`:`<button class="btn p" onclick="startTimer()">▶ Start</button>`}
+      <button class="btn g" onclick="resetTimer()">↺ Reset</button>
+      <button class="btn g" onclick="skipTimerMode()">⏭ Skip</button>
+    </div>
+    <div class="timer-sessions">Sessions completed today: <strong>${sessions}</strong> · <span style="color:var(--gold)">${sessions*10} pts earned</span></div>
+  </div>
+  <div class="pad gap"><div class="seclbl">Today's log</div></div>
+  <div class="pad timer-history" id="timer-history"></div>
+  <div class="bpad"></div>`;
+  renderTimerHistory();
+}
+function renderTimerHistory(){
+  const el=$('timer-history');if(!el)return;
+  const log=LS.get('timer_log',[]);
+  const today=new Date().toDateString();
+  const todayLog=log.filter(l=>new Date(l.ts).toDateString()===today).slice(-10).reverse();
+  if(!todayLog.length){el.innerHTML='<div class="empty-state">No sessions yet today. Start the hourglass!</div>';return;}
+  el.innerHTML=todayLog.map(l=>`<div class="timer-log-item"><span>${l.type==='focus'?'⏳':'☕'}</span><span class="timer-log-desc">${l.type==='focus'?'Focus session':'Break'} · ${new Date(l.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>${l.pts?`<span class="timer-log-pts">+${l.pts} pts</span>`:''}</div>`).join('');
+}
+function startTimer(){timerRunning=true;timerInterval=setInterval(tickTimer,1000);renderTimer();}
+function pauseTimer(){timerRunning=false;clearInterval(timerInterval);renderTimer();}
+function resetTimer(){pauseTimer();timerSecs=timerMode==='focus'?TIMER_FOCUS:TIMER_BREAK;renderTimer();}
+function skipTimerMode(){pauseTimer();timerMode=timerMode==='focus'?'break':'focus';timerSecs=timerMode==='focus'?TIMER_FOCUS:TIMER_BREAK;renderTimer();}
+function tickTimer(){
+  timerSecs--;
+  const d=$('timer-display');
+  if(d){const m=Math.floor(timerSecs/60).toString().padStart(2,'0');const s=(timerSecs%60).toString().padStart(2,'0');d.textContent=m+':'+s;}
+  if(timerSecs<=0){
+    clearInterval(timerInterval);timerRunning=false;
+    if(timerMode==='focus'){
+      addPoints(10);toast('+10 house points! Focus session complete 🏆','ok');
+      const sessions=LS.get('timer_sessions',0)+1;LS.set('timer_sessions',sessions);
+      const log=LS.get('timer_log',[]);log.push({type:'focus',ts:new Date().toISOString(),pts:10});LS.set('timer_log',log);
+      markStudied();timerMode='break';timerSecs=TIMER_BREAK;
+    }else{
+      toast('Break over! Ready for more?','info');
+      const log=LS.get('timer_log',[]);log.push({type:'break',ts:new Date().toISOString(),pts:0});LS.set('timer_log',log);
+      timerMode='focus';timerSecs=TIMER_FOCUS;
+    }
+    renderTimer();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   DECISION JOURNAL
+   ═══════════════════════════════════════════ */
+function renderJournal(){
+  const el=$('tab-journal');if(!el)return;
+  const entries=LS.get('journal_entries',[]);
+  let html=`<div class="pad"><div class="seclbl">Decision Journal</div><div class="secname">The Pensieve of Choices</div><div class="sec-story">Log every significant PM decision. The best PMs revisit decisions to learn from outcomes — this is your retrospective engine.</div></div>
+  <div class="pad"><button class="btn p" onclick="addJournalEntry()">+ Log a Decision</button></div>`;
+  if(!entries.length){
+    html+='<div class="pad"><div class="empty-state">No decisions logged yet. Start with a real work decision — small ones count too.</div></div>';
+  }else{
+    html+='<div class="journal-list pad">'+entries.map((e,i)=>{
+      const statusColor=e.outcome?'var(--ok)':e.status==='pending'?'var(--wa)':'var(--acc)';
+      const statusLabel=e.outcome?'Outcome known':e.status==='pending'?'Pending':'Open';
+      return `<div class="jrl-card"><div class="jrl-head"><span class="jrl-date">${new Date(e.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})}</span><span class="jrl-status" style="color:${statusColor}">${statusLabel}</span></div>
+      <div class="jrl-decision">${e.decision}</div>
+      ${e.context?`<div class="jrl-context">${e.context}</div>`:''}
+      ${e.outcome?`<div class="jrl-outcome"><strong>Outcome:</strong> ${e.outcome}</div>`:''}
+      <div class="jrl-acts"><button class="btn g" onclick="editJournalEntry(${i})">Edit</button><button class="btn g" onclick="addOutcome(${i})">📝 Add outcome</button><button class="btn g" onclick="deleteJournalEntry(${i})">Delete</button></div>
+      </div>`;
+    }).join('')+'</div>';
+  }
+  html+='<div class="bpad"></div>';
+  el.innerHTML=html;
+}
+function addJournalEntry(){
+  const decision=prompt('What decision did you make?');if(!decision)return;
+  const context=prompt('Context / why:','')||'';
+  const entries=LS.get('journal_entries',[]);
+  entries.unshift({decision,context,outcome:'',status:'open',created:new Date().toISOString()});
+  LS.set('journal_entries',entries);renderJournal();toast('Decision logged!','ok');
+}
+function addOutcome(i){
+  const entries=LS.get('journal_entries',[]);const e=entries[i];if(!e)return;
+  const outcome=prompt('What was the outcome?',e.outcome||'');if(outcome===null)return;
+  e.outcome=outcome;e.status='resolved';LS.set('journal_entries',entries);renderJournal();toast('Outcome recorded!','ok');
+}
+function editJournalEntry(i){
+  const entries=LS.get('journal_entries',[]);const e=entries[i];if(!e)return;
+  const decision=prompt('Decision:',e.decision);if(decision===null)return;
+  const context=prompt('Context:',e.context);if(context===null)return;
+  e.decision=decision;e.context=context;LS.set('journal_entries',entries);renderJournal();toast('Updated','ok');
+}
+function deleteJournalEntry(i){
+  if(!confirm('Delete this entry?'))return;
+  const entries=LS.get('journal_entries',[]);entries.splice(i,1);LS.set('journal_entries',entries);renderJournal();
+}
+
+/* ═══════════════════════════════════════════
+   PROGRESS ANALYTICS
+   ═══════════════════════════════════════════ */
+function renderAnalytics(){
+  const el=$('tab-analytics');if(!el)return;
+  const scores=LS.get('competency',{});
+  const cats=['discovery','strategy','execution','analytics','technical','communication','leadership','design','experimentation'];
+  const labels=['Discovery','Strategy','Execution','Analytics','Technical','Comms','Leadership','Design','Experiment'];
+  const vals=cats.map(c=>(scores[c]||0)/100);
+  const cx=150,cy=155,r=105,n=cats.length,angleStep=Math.PI*2/n;
+  const axes=cats.map((_,i)=>{const a=i*angleStep-Math.PI/2;return{x:cx+r*Math.cos(a),y:cy+r*Math.sin(a),lx:cx+(r+26)*Math.cos(a),ly:cy+(r+26)*Math.sin(a)};});
+  let svgRings='';
+  for(let ri=1;ri<=5;ri++){const rr=r*ri/5;const pts=cats.map((_,i)=>{const a=i*angleStep-Math.PI/2;return`${cx+rr*Math.cos(a)},${cy+rr*Math.sin(a)}`;}).join(' ');svgRings+=`<polygon points="${pts}" fill="none" stroke="var(--line2)" stroke-width="0.8"/>`;}
+  const svgAxes=axes.map(ax=>`<line x1="${cx}" y1="${cy}" x2="${ax.x.toFixed(1)}" y2="${ax.y.toFixed(1)}" stroke="var(--line2)" stroke-width="0.8"/>`).join('');
+  const dpts=vals.map((v,i)=>{const a=i*angleStep-Math.PI/2;const rv=r*v;return`${(cx+rv*Math.cos(a)).toFixed(1)},${(cy+rv*Math.sin(a)).toFixed(1)}`;}).join(' ');
+  const svgData=`<polygon points="${dpts}" fill="rgba(116,0,1,0.18)" stroke="var(--acc)" stroke-width="2"/>`;
+  const svgLabels=axes.map((ax,i)=>`<text x="${ax.lx.toFixed(1)}" y="${ax.ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="var(--ink2)" font-size="9" font-family="Cinzel,serif">${labels[i]}</text>`).join('');
+  const svgDots=vals.map((v,i)=>{const a=i*angleStep-Math.PI/2;const rv=r*v;return`<circle cx="${(cx+rv*Math.cos(a)).toFixed(1)}" cy="${(cy+rv*Math.sin(a)).toFixed(1)}" r="4" fill="var(--acc)" stroke="var(--bg2)" stroke-width="2"/>`;}).join('');
+  const svgChart=`<svg viewBox="0 0 300 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;display:block;margin:0 auto">${svgRings}${svgAxes}${svgData}${svgDots}${svgLabels}</svg>`;
+  const log=LS.get('streak_log',{});const today=new Date();
+  let calHtml='<div class="cal-grid">';
+  for(let d=29;d>=0;d--){const dt=new Date(today.getTime()-d*86400000);const key=dt.toDateString();calHtml+=`<div class="cal-day${log[key]?' cal-active':''}" title="${dt.toLocaleDateString()}"></div>`;}
+  calHtml+='</div>';
+  const avg=Math.round(cats.reduce((s,c)=>s+(scores[c]||0),0)/cats.length);
+  const bookprog=LS.get('bookprog',{});
+  const booksDone=allBooks().filter(b=>(bookprog[b.title]||b.pct)>=100).length;
+  el.innerHTML=`<div class="pad"><div class="seclbl">Analytics</div><div class="secname">Your Progress Map</div></div>
+  <div class="analytics-section pad"><div class="an-label">Competency Radar</div>${svgChart}</div>
+  <div class="analytics-section pad gap"><div class="an-label">30-day Study Activity</div>${calHtml}<div style="font-size:12px;color:var(--ink3);margin-top:7px">■ Green = studied that day</div></div>
+  <div class="analytics-section pad gap"><div class="an-label">Summary</div>
+    <div class="an-stats">
+      <div class="an-stat"><div class="an-num">${points()}</div><div class="an-lbl">total pts</div></div>
+      <div class="an-stat"><div class="an-num">${streakObj().n||0}</div><div class="an-lbl">day streak</div></div>
+      <div class="an-stat"><div class="an-num">${avg}%</div><div class="an-lbl">avg competency</div></div>
+      <div class="an-stat"><div class="an-num">${booksDone}</div><div class="an-lbl">books done</div></div>
+      <div class="an-stat"><div class="an-num">${LS.get('timer_sessions',0)}</div><div class="an-lbl">pomodoros</div></div>
+      <div class="an-stat"><div class="an-num">${Object.values(LS.get('owl_exam_passed',{})).filter(Boolean).length}</div><div class="an-lbl">O.W.L.s earned</div></div>
+    </div>
+  </div>
+  <div class="bpad"></div>`;
+}
+
+/* ═══════════════════════════════════════════
+   O.W.L. EXAMINATIONS
+   ═══════════════════════════════════════════ */
+const OWL_QUESTIONS={
+  1:[
+    {q:'What is a Product Manager primarily responsible for?',opts:['Writing code','Defining what to build and why','Running QA tests','Managing the budget'],c:1,why:'PMs define the problem and outcome — not the implementation.'},
+    {q:'What does Marty Cagan mean by "product discovery"?',opts:['Discovering bugs','Validating the right problem before building','Doing only market research','Testing the final product'],c:1,why:'Discovery validates you are solving the right problem before you invest in building.'},
+    {q:'What is "Jobs-to-be-Done"?',opts:['A job listing for PMs','The reason a user "hires" a product to do something','A sprint backlog item','A user story format'],c:1,why:'JTBD: "When I [situation] I want to [motivation] so I can [outcome]." Focus on motivation.'},
+    {q:'What is the CIRCLES framework used for?',opts:['Competitor analysis','Structuring a product design interview answer','Prioritising features','Hiring engineers'],c:1,why:'CIRCLES = Comprehend, Identify user, Report needs, Cut, List solutions, Evaluate, Summarise.'},
+    {q:'What is a North Star Metric?',opts:['A KPI your manager tracks','A single metric capturing core user value that predicts revenue','The number of features shipped','Daily active users always'],c:1,why:'North Star = core value your product delivers. It is a leading indicator, not a vanity metric.'},
+    {q:'What does "output vs outcome" mean in PM?',opts:['Output is code, outcome is design','Output is what you build, outcome is the value it creates','They mean the same thing','Outcomes are always revenue'],c:1,why:'PMs are measured on outcomes (did it help users?) not outputs (did we ship?).'},
+    {q:'What is an MVP?',opts:['Most Valuable Player','Minimum to test your riskiest assumption with real users','A finished product with bugs','A prototype only designers build'],c:1,why:'MVP = minimum to validate your biggest assumption — not a complete product.'},
+    {q:'What is product-market fit?',opts:['When engineering and marketing agree','When customers love your product enough to tell others','When the product has no bugs','When you hit revenue targets'],c:1,why:'PMF = your product solves a real problem so well that customers pull you into the market.'},
+    {q:'What is the RICE prioritisation framework?',opts:['Revenue, Impact, Cost, Effort','Reach × Impact × Confidence ÷ Effort','Risk, Investment, Conversion, Execution','Reach, Iteration, Cost, Engineering'],c:1,why:'RICE = Reach × Impact × Confidence ÷ Effort. Higher score = higher priority.'},
+    {q:'What do PMs write to align stakeholders on a feature?',opts:['A technical spec','A PRD — Problem, Goals, Success Metrics, Requirements','A sprint plan','A design brief'],c:1,why:'PRD aligns all stakeholders on the why and what before building begins.'}
+  ],
+  2:[
+    {q:'What is a product strategy?',opts:['A list of features to build','A plan defining vision, focus, and what you will NOT do','A marketing plan','The engineering roadmap'],c:1,why:'Strategy = focus and trade-offs. What you will do, what you will prioritise, and what you will consciously ignore.'},
+    {q:'What is "competitive positioning"?',opts:['Beating competitors on price','How your product occupies a distinct place in the customer\'s mind','Copying competitor features','Being first to market'],c:1,why:'Positioning is the reason customers choose you over alternatives — own a specific perception.'},
+    {q:'What is user segmentation?',opts:['Splitting the codebase by feature','Dividing users into groups with common needs or behaviours','Filtering bug reports','Running A/B tests'],c:1,why:'Segmentation lets you focus on the right users and build specifically for their needs.'},
+    {q:'What does the Kano model categorise?',opts:['Competitor products','Features into must-haves, performance features, and delighters','Sprint priorities','UX wireframes'],c:1,why:'Kano helps you identify what creates delight vs what just prevents dissatisfaction.'},
+    {q:'What does "retention" mean in AARRR?',opts:['Acquiring new users','Users coming back after their first use','Revenue per user','Referral rate'],c:1,why:'Retention = users returning. It is the foundation of sustainable growth.'},
+    {q:'What is a product vision?',opts:['The sprint goal','An aspirational long-term state your product strives towards','A feature list','A go-to-market plan'],c:1,why:'Vision guides all strategy — where you want to be in 3-5 years.'},
+    {q:'What is the difference between a feature and an outcome?',opts:['Features are UX, outcomes are code','Features are what you build, outcomes are the value it creates','They mean the same','Outcomes are always revenue'],c:1,why:'Building a feature is not a goal. The goal is a measurable change in user behaviour or business result.'},
+    {q:'What is a "pivot" in product development?',opts:['A sprint retrospective','A fundamental change in strategy while keeping learnings','Releasing a new version','A design redesign'],c:1,why:'Pivot = structured course correction based on evidence your current approach is not working.'},
+    {q:'What does "switching cost" mean?',opts:['The cost of changing cloud providers','The effort/pain a user faces when moving to a competitor','The cost of running A/B tests','Infrastructure migration cost'],c:1,why:'High switching costs are a moat — users stay because leaving is too painful.'},
+    {q:'What is "dogfooding"?',opts:['Using your own product as an internal user','Feeding dogs data','Testing on external users only','A type of sprint'],c:1,why:'Dogfooding builds empathy and surfaces issues your users face.'}
+  ],
+  3:[
+    {q:'What is a "metric tree"?',opts:['A visualisation of all bugs','A hierarchy showing how metrics roll up to the North Star','A sprint burndown chart','A data warehouse schema'],c:1,why:'Metric tree = which levers drive the top-line outcome.'},
+    {q:'What makes a good A/B test?',opts:['Running it for one day','Single variable, sufficient sample, statistical significance','Testing as many changes as possible','Only testing on new users'],c:1,why:'Good A/B tests change one variable, run to significance, with a clear hypothesis.'},
+    {q:'What is "statistical significance"?',opts:['A result that feels important','Confidence the effect is not due to random chance','P-value above 0.05','A large sample size alone'],c:1,why:'p<0.05 = less than 5% chance the result happened by chance.'},
+    {q:'What is a "guardrail metric"?',opts:['A metric you always want to increase','A metric that must not degrade even as you optimise the North Star','A KPI set by the CEO','A sprint velocity measure'],c:1,why:'Guardrail metrics protect against unintended harm — optimise one thing without breaking another.'},
+    {q:'What does LTV/CAC ratio measure?',opts:['Load time vs conversion','Lifetime value of a customer divided by cost to acquire them','Revenue vs costs','User growth rate'],c:1,why:'LTV/CAC > 3 is a healthy benchmark — $3 of value for every $1 spent on acquisition.'},
+    {q:'What is an "embedding" in AI/ML context?',opts:['A video embedded in a webpage','A numerical vector representing semantic meaning','A model hyperparameter','A type of database index'],c:1,why:'Embeddings map text/images to vectors in a semantic space for similarity search, recommendations, clustering.'},
+    {q:'What is "feature engineering"?',opts:['Building product features','Creating/transforming input variables to improve ML model performance','Writing technical docs','Sprint planning'],c:1,why:'Feature engineering uses domain knowledge to make ML models more accurate.'},
+    {q:'What is "precision vs recall" in ML?',opts:['Speed vs accuracy','Precision = quality of positives; recall = coverage of real positives','Training vs test performance','Model size vs performance'],c:1,why:'Precision = TP/(TP+FP). Recall = TP/(TP+FN). Trade-off based on use case.'},
+    {q:'What is "data infrastructure" in a PM context?',opts:['Server hardware','Systems that collect, store, process, and serve data to the product','Cloud computing only','The BI team'],c:1,why:'PMs need to know what insights are possible, what tracking requires, and where bottlenecks are.'},
+    {q:'What is "multivariate testing"?',opts:['Testing across multiple countries','Testing multiple variables simultaneously to find the best combination','Running 2+ A/B tests sequentially','Testing a product on multiple devices'],c:1,why:'Multivariate testing varies multiple elements at once — faster at scale than sequential A/B.'}
+  ],
+  4:[
+    {q:'How should you open a product strategy presentation to leadership?',opts:['Start with technical details','Open with the customer problem, then market size, solution, metrics','List features first','Show competitor analysis first'],c:1,why:'Lead with the customer problem and opportunity — leadership buys into the why before the what.'},
+    {q:'What is a "pre-mortem"?',opts:['A post-launch review','Imagining failure and working backwards to find risks beforehand','A technical debt audit','A stakeholder alignment meeting'],c:1,why:'Pre-mortems surface hidden risks before launch — invaluable for de-risking.'},
+    {q:'How do you handle sceptical stakeholders?',opts:['Avoid them','Lead with data addressing their concern, then co-create a path','Send email only','Escalate to your manager'],c:1,why:'Sceptics need to feel heard first. Address their concern with data, then co-create — not override.'},
+    {q:'What is "influence without authority"?',opts:['Getting a promotion','Achieving outcomes through trust and persuasion rather than reporting lines','Being the loudest in the room','Having final say on decisions'],c:1,why:'PMs lead through vision, trust, and compelling logic — not direct authority over engineers or designers.'},
+    {q:'What makes a good product interview case answer?',opts:['Knowing all the answers','Structured thinking: clarify → explore → prioritise → measure → tradeoffs','Giving the most features','Being fast'],c:1,why:'Interviewers test structured thinking. They want to see how you approach ambiguity.'},
+    {q:'What is "ruthless prioritisation"?',opts:['Saying no to your team','Consistently focusing on highest-impact work and explicitly deprioritising everything else','Cutting features randomly','Prioritising only engineering tasks'],c:1,why:'Every yes is a no to something else — make that trade-off explicit and visible.'},
+    {q:'What must a launch plan cover?',opts:['A deployment checklist only','Communications, support, metrics, rollback strategy, and cross-functional alignment','A marketing campaign','A sprint release'],c:1,why:'Launch plans align sales, support, marketing, and engineering — preventing surprises on day one.'},
+    {q:'When must you define success metrics for a new feature?',opts:['After launch, based on data','Before launch, tied specifically to the feature\'s stated goal','At the end of the year','Only for major features'],c:1,why:'Define metrics before launch — otherwise you measure what\'s easy, not what matters.'},
+    {q:'What is "technical debt" and why should PMs care?',opts:['A type of product debt','Accumulated shortcuts that slow future development; balance shipping speed vs long-term velocity','A financial term only','Something only engineers care about'],c:1,why:'PMs who ignore tech debt ship features fast initially but kill team velocity over time.'},
+    {q:'What question should a PM ask before every feature?',opts:['"How long will this take?"','"Will this solve a real problem for real users, and how will we measure it?"','"What does the CEO want?"','"Can we do this in 2 weeks?"'],c:1,why:'Every feature decision must start with "is this a real problem?" and "how will we know we solved it?"'}
+  ]
+};
+let owlExamState={year:1,qi:0,score:0,secs:0,interval:null};
+function renderOwlExam(){
+  const el=$('tab-owlexam');if(!el)return;
+  const passed=LS.get('owl_exam_passed',{});
+  el.innerHTML=`<div class="pad"><div class="seclbl">O.W.L. Examinations</div><div class="secname">Ordinary Wizarding Levels</div><div class="sec-story">10 questions per year. 15 seconds each. Pass 7/10 to earn 50 house points and your O.W.L. certificate. No looking at notes.</div></div>
+  <div class="owl-exam-select pad">
+    ${[1,2,3,4].map(y=>`<div class="owl-year-card${passed[y]?' owl-passed':''}" onclick="startOwlExam(${y})">
+      <div class="owl-year-num">Year ${y}</div>
+      <div class="owl-year-label">${['Fundamentals','Product Sense','AI & Metrics','Apply'][y-1]}</div>
+      ${passed[y]?'<div class="owl-cert">🎓 O.W.L. Earned</div>':'<div class="owl-start-hint">Tap to sit the exam →</div>'}
+    </div>`).join('')}
+  </div>
+  <div class="bpad"></div>`;
+}
+function startOwlExam(year){
+  clearInterval(owlExamState.interval);
+  owlExamState={year,qi:0,score:0,secs:15,interval:null};
+  renderOwlQ();
+}
+function renderOwlQ(){
+  const el=$('tab-owlexam');if(!el)return;
+  const qs=OWL_QUESTIONS[owlExamState.year];
+  if(owlExamState.qi>=qs.length){finishOwlExam();return;}
+  const q=qs[owlExamState.qi];
+  owlExamState.secs=15;
+  clearInterval(owlExamState.interval);
+  owlExamState.interval=setInterval(()=>{
+    owlExamState.secs--;
+    const td=$('owl-timer');if(td)td.textContent=owlExamState.secs+'s';
+    if(owlExamState.secs<=0){clearInterval(owlExamState.interval);owlExamState.qi++;renderOwlQ();}
+  },1000);
+  el.innerHTML=`<div class="pad"><div class="seclbl">O.W.L. · Year ${owlExamState.year}</div><div class="secname">Question ${owlExamState.qi+1} of ${qs.length}</div></div>
+  <div class="owl-exam-wrap pad">
+    <div class="owl-exam-top"><div class="owl-score-bar"><div class="owl-score-fill" style="width:${owlExamState.qi/qs.length*100}%"></div></div><div class="owl-timer" id="owl-timer">${owlExamState.secs}s</div></div>
+    <div class="owl-q">${q.q}</div>
+    <div class="owl-opts">${q.opts.map((o,oi)=>`<button class="owl-opt" onclick="answerOwl(${oi})">${o}</button>`).join('')}</div>
+  </div>
+  <div class="bpad"></div>`;
+}
+function answerOwl(chosen){
+  clearInterval(owlExamState.interval);
+  const q=OWL_QUESTIONS[owlExamState.year][owlExamState.qi];
+  if(chosen===q.c)owlExamState.score++;
+  document.querySelectorAll('.owl-opt').forEach((o,i)=>{o.disabled=true;if(i===q.c)o.classList.add('owl-opt-right');else if(i===chosen&&chosen!==q.c)o.classList.add('owl-opt-wrong');});
+  const wrap=document.querySelector('.owl-exam-wrap');
+  if(wrap){const fb=document.createElement('div');fb.className='owl-fb '+(chosen===q.c?'owl-fb-ok':'owl-fb-no');fb.textContent=(chosen===q.c?'✓ ':'✗ ')+q.why;wrap.appendChild(fb);}
+  setTimeout(()=>{owlExamState.qi++;renderOwlQ();},1800);
+}
+function finishOwlExam(){
+  clearInterval(owlExamState.interval);
+  const el=$('tab-owlexam');if(!el)return;
+  const passed=owlExamState.score>=7;
+  if(passed){const p=LS.get('owl_exam_passed',{});p[owlExamState.year]=true;LS.set('owl_exam_passed',p);addPoints(50);markStudied();}
+  el.innerHTML=`<div class="pad"><div class="seclbl">O.W.L. Result · Year ${owlExamState.year}</div><div class="secname">${passed?'Outstanding — O.W.L. Achieved!':'Not yet achieved'}</div></div>
+  <div class="owl-result-wrap pad">
+    <div class="owl-result-score${passed?' owl-result-pass':' owl-result-fail'}">${owlExamState.score}/10</div>
+    <div class="owl-result-label">${passed?'🎓 +50 house points earned!':'You need 7/10 to pass. Review the curriculum and retry.'}</div>
+    <div class="owl-result-bar"><div style="height:100%;width:${owlExamState.score*10}%;background:${passed?'var(--ok)':'var(--acc)'};border-radius:4px;transition:width .6s ease;"></div></div>
+    <div class="owl-result-pass-line">${passed?'Your O.W.L. in Year '+owlExamState.year+' PM is recorded.':'Keep studying — you\'re getting there.'}</div>
+    <div style="margin-top:16px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn p" onclick="startOwlExam(${owlExamState.year})">↺ Retry</button>
+      <button class="btn g" onclick="renderOwlExam()">← All years</button>
+      <button class="btn g" onclick="navTo('curriculum')">📜 Review curriculum</button>
+    </div>
+  </div>
+  <div class="bpad"></div>`;
+}
+
+/* ═══════════════════════════════════════════
+   AI MENTOR (Dumbledore)
+   ═══════════════════════════════════════════ */
+let mentorHistory=[];
+function renderMentor(){
+  const el=$('tab-mentor');if(!el)return;
+  const key=LS.get('gemini_key','');
+  if(!key){
+    el.innerHTML=`<div class="pad"><div class="seclbl">AI Mentor</div><div class="secname">Albus Dumbledore, PM</div></div>
+    <div class="pad"><div class="mentor-no-key">🧙 Dumbledore awaits.<br><br>To activate the AI Mentor, add your free Gemini API key in <strong>Settings</strong>. It takes 30 seconds to get one at Google AI Studio.</div>
+    <div style="margin-top:12px"><button class="btn p" onclick="navTo('settings')">Go to Settings ↗</button></div></div>
+    <div class="bpad"></div>`;
+    return;
+  }
+  const quickAsks=['Explain product discovery vs delivery','How do I prepare for a PM interview?','What framework should I use for prioritisation?','How do I improve my analytics competency?','Coach me on telling my NoBroker story'];
+  el.innerHTML=`<div class="pad"><div class="seclbl">AI Mentor</div><div class="secname">Albus Dumbledore, PM</div><div class="sec-story">Ask anything about product management. Dumbledore draws on 150 years of building wizarding products.</div></div>
+  <div class="mentor-wrap">
+    <div class="mentor-chat" id="mentor-chat">${mentorHistory.length?mentorHistory.map(m=>`<div class="mentor-msg${m.role==='user'?' mentor-msg-user':' mentor-msg-ai'}"><div class="mentor-bubble">${m.text.replace(/\n/g,'<br>')}</div></div>`).join(''):'<div class="mentor-welcome"><div class="mentor-avatar">🧙</div><div class="mentor-welcome-txt">Welcome, young PM. What wisdom do you seek?<br><small>Try asking about PM strategy, interview prep, or your NoBroker work.</small></div></div>'}</div>
+    <div class="mentor-quick-asks">${quickAsks.map(q=>`<button class="mentor-quick" onclick="quickAsk('${q}')">${q}</button>`).join('')}</div>
+    <div class="mentor-input-row">
+      <textarea class="mentor-input" id="mentor-input" placeholder="Ask about PM strategy, interview prep, your NoBroker projects…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askMentor();}"></textarea>
+      <button class="mentor-send" onclick="askMentor()">Ask →</button>
+    </div>
+  </div>
+  <div class="bpad"></div>`;
+  const chat=$('mentor-chat');if(chat)chat.scrollTop=chat.scrollHeight;
+}
+function quickAsk(q){const inp=$('mentor-input');if(inp){inp.value=q;askMentor();}}
+async function askMentor(){
+  const inp=$('mentor-input');if(!inp)return;
+  const q=inp.value.trim();if(!q)return;
+  inp.value='';
+  mentorHistory.push({role:'user',text:q});
+  renderMentor();
+  const chat=$('mentor-chat');
+  if(chat){const th=document.createElement('div');th.className='mentor-msg mentor-msg-ai';th.id='mentor-thinking';th.innerHTML='<div class="mentor-bubble mentor-thinking">Dumbledore is thinking…</div>';chat.appendChild(th);chat.scrollTop=chat.scrollHeight;}
+  const scores=LS.get('competency',{});
+  const cats=['discovery','strategy','execution','analytics','technical','communication','leadership','design','experimentation'];
+  const weakest=cats.reduce((w,c)=>(scores[c]||0)<(scores[w]||0)?c:w,'discovery');
+  const ctx=`You are Professor Dumbledore, but also a world-class Product Manager with deep wisdom. You speak with warmth, clarity, and occasional magical metaphors. Keep responses concise — 3-5 sentences unless detail is needed. The person is Ujjwal, a Business Analyst at NoBroker (Indian prop-tech) transitioning to PM. He has 4 years of BA experience, shipped 5 AI tools solo (ML pipeline, WhatsApp bot, Call Quality Analyzer, event CRM for 200+ concurrent buyers). His weakest PM competency right now is ${weakest}. Answer this PM question practically and encouragingly:\n\n${q}`;
+  const ans=await geminiCall(ctx);
+  const thinking=document.getElementById('mentor-thinking');if(thinking)thinking.remove();
+  mentorHistory.push({role:'ai',text:ans||'Even the greatest wizards have off days. Check your Gemini API key in Settings and try again.'});
+  renderMentor();
+}
+
+/* ═══════════════════════════════════════════
+   AI JOB FIT SCORER
+   ═══════════════════════════════════════════ */
+async function scoreJD(){
+  const jdInput=$('jd-input');if(!jdInput)return;
+  const jd=jdInput.value.trim();if(!jd){toast('Paste a job description first');return;}
+  const btn=$('jd-score-btn');if(btn){btn.textContent='Scoring…';btn.disabled=true;}
+  const ctx=`You are an expert PM recruiter. Analyse this job description and score how well it fits a candidate who: is a 4-year Business Analyst at NoBroker (Indian prop-tech), has shipped 5 AI tools solo (ML pipeline, WhatsApp bot, Call Quality Analyzer, event CRM), is transitioning to PM with structured PM study, strong execution and analytics background, no formal PM title yet.
+
+Score 0-100% and explain briefly. Then list 5 specific interview questions this company will likely ask. Format exactly as:
+FIT SCORE: [number]%
+WHY: [2-3 sentences]
+TOP 5 QUESTIONS:
+1. [question]
+2. [question]
+3. [question]
+4. [question]
+5. [question]
+
+Job Description:
+${jd.slice(0,2500)}`;
+  const result=await geminiCall(ctx);
+  if(btn){btn.textContent='Score with Gemini →';btn.disabled=false;}
+  const out=$('jd-result');if(!out)return;
+  if(result){
+    const scoreMatch=result.match(/FIT SCORE:\s*(\d+)/i);
+    const score=scoreMatch?parseInt(scoreMatch[1]):0;
+    const color=score>=80?'var(--ok)':score>=60?'var(--wa)':'var(--bad)';
+    const body=result.replace(/FIT SCORE:\s*\d+%?/i,'').trim().replace(/\n/g,'<br>');
+    out.innerHTML=`<div class="jd-score-result"><div class="jd-score-top"><div class="jd-score-num" style="color:${color}">${score}%</div><div class="jd-score-label">${score>=80?'Strong fit':score>=60?'Good fit':'Moderate fit'}</div></div><div class="jd-score-body">${body}</div></div>`;
+  }else{
+    out.innerHTML='<div class="empty-state">Could not score. Check your Gemini key in Settings.</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   AI MOCK INTERVIEW EVALUATOR
+   ═══════════════════════════════════════════ */
+async function evaluateAnswer(){
+  const q=$('mock-q');const a=$('mock-ans');if(!q||!a)return;
+  const qtext=q.textContent;const atext=a.value.trim();
+  if(!atext){toast('Write your answer first');return;}
+  const existing=document.getElementById('ai-eval-result');if(existing)existing.remove();
+  const ctx=`You are a PM interview coach. Evaluate this answer concisely using the STAR framework. Score 1-10. Be direct.
+
+Question: ${qtext}
+Answer: ${atext}
+
+Respond in this format:
+SCORE: [1-10]/10
+STRENGTHS: [1-2 sentences]
+IMPROVE: [1-2 specific suggestions]
+STAR: Situation [✓/✗] Task [✓/✗] Action [✓/✗] Result [✓/✗]`;
+  toast('Evaluating with Gemini…','info');
+  const result=await geminiCall(ctx);
+  if(result){
+    const div=document.createElement('div');div.id='ai-eval-result';div.className='ai-eval-result';
+    div.innerHTML=result.replace(/SCORE:\s*(\d+\/10)/i,'<strong>AI Score: $1</strong>').replace(/\n/g,'<br>');
+    const mhint=document.querySelector('.mhint');if(mhint)mhint.before(div);
+  }
 }
 
 /* INIT */

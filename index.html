@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=2">
+<link rel="stylesheet" href="assets/app.css?v=3">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
@@ -32,6 +32,11 @@
   <div class="sn" data-t="hogsmeade" onclick="sw('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade</div>
   <div class="sn" data-t="prd" onclick="sw('prd',event)"><span class="ic">📋</span> The Decree</div>
   <div class="sn" data-t="settings" onclick="sw('settings',event)"><span class="ic">⚙</span> Settings</div>
+  <div class="sn" data-t="timer" onclick="sw('timer',event)"><span class="ic">⏳</span> Study Timer</div>
+  <div class="sn" data-t="journal" onclick="sw('journal',event)"><span class="ic">📔</span> Decision Journal</div>
+  <div class="sn" data-t="analytics" onclick="sw('analytics',event)"><span class="ic">📈</span> Analytics</div>
+  <div class="sn" data-t="owlexam" onclick="sw('owlexam',event)"><span class="ic">🎓</span> O.W.L. Exam</div>
+  <div class="sn" data-t="mentor" onclick="sw('mentor',event)"><span class="ic">🧙</span> AI Mentor</div>
   <div class="sb-pts">
     <div class="sb-ptn" id="sb-ptn">0</div>
     <div><div class="sb-ptl">house points</div><div class="sb-ptl" id="sb-streak" style="color:var(--ink3)">0-day streak</div></div>
@@ -160,6 +165,12 @@
     <div class="fb" data-f="internal" onclick="filterJobs('internal')">Internal</div>
   </div>
   <div id="jlist"></div>
+  <div class="gap pad"><div class="seclbl">AI Job Fit Scorer</div><div class="secname">Score any JD</div><div class="sec-story">Paste any job description — Gemini scores your fit % and generates the 5 most likely interview questions for that role.</div></div>
+  <div class="pad">
+    <textarea id="jd-input" class="jd-input" placeholder="Paste the full job description here…" rows="6"></textarea>
+    <div style="margin-top:9px"><button class="btn p" id="jd-score-btn" onclick="scoreJD()">Score with Gemini →</button></div>
+    <div id="jd-result" style="margin-top:14px"></div>
+  </div>
   <div class="bpad"></div>
 </section>
 
@@ -246,6 +257,26 @@
 <section id="tab-settings" class="tab">
   <div class="bpad"></div>
 </section>
+
+<section id="tab-timer" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-journal" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-analytics" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-owlexam" class="tab">
+  <div class="bpad"></div>
+</section>
+
+<section id="tab-mentor" class="tab">
+  <div class="bpad"></div>
+</section>
 </div>
 
 <nav id="bnav">
@@ -271,6 +302,11 @@
       <div class="sheet-item" onclick="sheetGo('hogsmeade',event)"><span class="ic">🏘</span> Hogsmeade · Fun</div>
       <div class="sheet-item" onclick="sheetGo('prd',event)"><span class="ic">📋</span> The Decree · PRD</div>
       <div class="sheet-item" onclick="sheetGo('settings',event)"><span class="ic">⚙</span> Settings</div>
+      <div class="sheet-item" onclick="sheetGo('timer',event)"><span class="ic">⏳</span> Study Timer · Pomodoro</div>
+      <div class="sheet-item" onclick="sheetGo('journal',event)"><span class="ic">📔</span> Decision Journal</div>
+      <div class="sheet-item" onclick="sheetGo('analytics',event)"><span class="ic">📈</span> Analytics · Progress map</div>
+      <div class="sheet-item" onclick="sheetGo('owlexam',event)"><span class="ic">🎓</span> O.W.L. Examinations</div>
+      <div class="sheet-item" onclick="sheetGo('mentor',event)"><span class="ic">🧙</span> AI Mentor · Dumbledore</div>
     </div>
     <div class="macts"><button class="btn g mclose" onclick="closeSheet()">Close</button></div>
   </div>
@@ -295,6 +331,7 @@
     <textarea class="mta" id="mock-ans" placeholder="Cast your answer. Use CIRCLES or STAR — state a decision you made and the trade-off you weighed."></textarea>
     <div class="macts">
       <button class="btn g mclose" onclick="closeMock()">Retreat</button>
+      <button class="btn g" onclick="evaluateAnswer()">⚡ AI Evaluate</button>
       <button class="btn p" onclick="nextQ()">Next spell →</button>
     </div>
     <div class="mhint">Aim for 90–120 seconds spoken. Bullet first, then expand. After each: did I name a decision and a trade-off?</div>
